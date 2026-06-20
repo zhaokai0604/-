@@ -1,0 +1,107 @@
+name: resume-ai
+
+services:
+  mysql:
+    image: mysql:8.4
+    container_name: resume-ai-mysql
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: root123456
+      MYSQL_DATABASE: resume_ai
+      MYSQL_USER: resume
+      MYSQL_PASSWORD: resume123
+    ports:
+      - "3307:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+      - ./database.sql:/docker-entrypoint-initdb.d/database.sql:ro
+    command: ["mysqld", "--character-set-server=utf8mb4", "--collation-server=utf8mb4_unicode_ci"]
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-uresume", "-presume123"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  redis:
+    image: redis:7-alpine
+    container_name: resume-ai-redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+
+  backend:
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+    container_name: resume-ai-backend
+    restart: unless-stopped
+    environment:
+      DATABASE_URL: mysql+pymysql://resume:resume123@mysql:3306/resume_ai?charset=utf8mb4
+      SESSION_SECRET: ${SESSION_SECRET:-resume-ai-local-dev-secret-change-me}
+      SESSION_COOKIE_NAME: ${SESSION_COOKIE_NAME:-resume_ai_session}
+      SESSION_EXPIRE_HOURS: ${SESSION_EXPIRE_HOURS:-24}
+      SESSION_COOKIE_SECURE: ${SESSION_COOKIE_SECURE:-false}
+      ALLOW_REGISTER: ${ALLOW_REGISTER:-true}
+      ADMIN_USERNAME: ${ADMIN_USERNAME:-admin}
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD:-}
+      ADMIN_DISPLAY_NAME: ${ADMIN_DISPLAY_NAME:-系统管理员}
+      DEEPSEEK_API_KEY: ${DEEPSEEK_API_KEY:-}
+      MAX_UPLOAD_SIZE_MB: ${MAX_UPLOAD_SIZE_MB:-20}
+      MAX_ZIP_TOTAL_SIZE_MB: ${MAX_ZIP_TOTAL_SIZE_MB:-120}
+      WECHAT_APP_ID: ${WECHAT_APP_ID:-}
+      WECHAT_APP_SECRET: ${WECHAT_APP_SECRET:-}
+      WECHAT_REDIRECT_URI: ${WECHAT_REDIRECT_URI:-}
+      REDIS_URL: ${REDIS_URL:-redis://redis:6379/0}
+      USE_CELERY: ${USE_CELERY:-true}
+      GUEST_SESSION_COOKIE_NAME: ${GUEST_SESSION_COOKIE_NAME:-resume_ai_guest_session}
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./data:/app/data
+      - ./assets:/app/assets
+    depends_on:
+      mysql:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+  celery-worker:
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+    container_name: resume-ai-celery
+    restart: unless-stopped
+    command: ["celery", "-A", "app.tasks.celery_app:celery_app", "worker", "--loglevel=info"]
+    environment:
+      DATABASE_URL: mysql+pymysql://resume:resume123@mysql:3306/resume_ai?charset=utf8mb4
+      REDIS_URL: ${REDIS_URL:-redis://redis:6379/0}
+      USE_CELERY: "true"
+      SESSION_SECRET: ${SESSION_SECRET:-resume-ai-local-dev-secret-change-me}
+      DEEPSEEK_API_KEY: ${DEEPSEEK_API_KEY:-}
+    volumes:
+      - ./data:/app/data
+      - ./assets:/app/assets
+    depends_on:
+      mysql:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+  frontend:
+    build:
+      context: .
+      dockerfile: frontend/Dockerfile
+    container_name: resume-ai-frontend
+    restart: unless-stopped
+    ports:
+      - "5173:80"
+    depends_on:
+      - backend
+
+volumes:
+  mysql_data:

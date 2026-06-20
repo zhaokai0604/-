@@ -1,0 +1,7 @@
+{
+  "ai": {
+    "provider": "deepseek",
+    "api_url": "https://api.deepseek.com/chat/completions",
+    "model": "deepseek-chat"
+  }
+}

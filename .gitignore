@@ -1,0 +1,15 @@
+.env
+__pycache__/
+*.pyc
+.venv/
+.pytest_cache/
+node_modules/
+dist/
+logs/
+.superpowers/
+data/uploads/*
+data/extracted/*
+data/reports/*
+!data/uploads/.gitkeep
+!data/extracted/.gitkeep
+!data/reports/.gitkeep
