@@ -35,13 +35,17 @@ onMounted(() => {
         <button class="secondary-action danger-action" :disabled="platform.loading || !platform.history.length" @click="platform.clearAllHistory">
           <Trash2 :size="16" />清空
         </button>
-        <button class="secondary-action" :disabled="platform.loading" @click="platform.loadHistory">
+        <button class="secondary-action" :disabled="platform.loading || platform.historyLoading" @click="platform.loadHistory">
           <RefreshCw :size="16" />刷新
         </button>
       </div>
     </div>
-    <div class="table-wrap">
-      <table class="data-table">
+    <div v-if="platform.historyLoading" class="empty-state compact">
+      <RefreshCw :size="28" class="spin-icon" />
+      <span>正在加载历史记录…</span>
+    </div>
+    <div v-else class="table-wrap">
+      <table class="data-table history-table">
         <thead>
           <tr>
             <th class="select-col">
@@ -54,7 +58,12 @@ onMounted(() => {
                 @change="platform.toggleAllHistory"
               />
             </th>
-            <th>文件</th><th>岗位</th><th>总分</th><th>模式</th><th>时间</th><th>操作</th>
+            <th class="history-file-col">文件</th>
+            <th class="history-target-col">岗位</th>
+            <th class="history-score-col">总分</th>
+            <th class="history-mode-col">模式</th>
+            <th class="history-time-col">时间</th>
+            <th class="history-action-col">操作</th>
           </tr>
         </thead>
         <tbody>
@@ -65,14 +74,24 @@ onMounted(() => {
             <td>
               {{ record.filename }}
               <div v-if="record.version_no > 1" class="muted-cell">v{{ record.version_no }}</div>
+              <div v-if="record.score_reliability === 'low_parse_capped'" class="record-badges">
+                <span v-if="record.score_reliability === 'low_parse_capped'" class="subtle-pill warn">低解析封顶</span>
+              </div>
             </td>
             <td>
-              {{ record.target_position || '-' }}
+              <div class="history-target-text" :title="record.target_position || '-'">{{ record.target_position || '-' }}</div>
               <div v-if="record.job_profile?.name" class="muted-cell">{{ record.job_profile.name }}</div>
             </td>
-            <td><strong>{{ record.total_score }}</strong></td>
-            <td><span class="mode-tag" :class="record.analysis_mode">{{ record.analysis_mode_label || platform.analysisModeLabel(record.analysis_mode) }}</span></td>
-            <td>{{ new Date(record.created_at).toLocaleString() }}</td>
+            <td>
+              <strong :class="['score-cell', platform.scoreGradeTone(record.total_score)]">{{ record.total_score }}</strong>
+              <div v-if="record.parse_quality" class="muted-cell">
+                <span class="subtle-pill" :class="platform.parseQualityTone(record.parse_quality)">
+                  {{ platform.parseQualityLabel(record.parse_quality) }}
+                </span>
+              </div>
+            </td>
+            <td><span class="mode-tag" :class="platform.displayAnalysisModeClass(record)">{{ platform.displayAnalysisModeLabel(record) }}</span></td>
+            <td>{{ platform.formatDateTime(record.created_at) }}</td>
             <td class="row-actions">
               <button @click="platform.openRecord(record)">查看</button>
               <button @click="platform.startNewVersion(record)">新版本</button>

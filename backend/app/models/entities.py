@@ -1,6 +1,6 @@
 from datetime import datetime
 
-from sqlalchemy import DateTime, Float, ForeignKey, Integer, String, Text
+from sqlalchemy import Boolean, DateTime, Float, ForeignKey, Integer, String, Text
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.core.database import Base
@@ -30,6 +30,7 @@ class UserProfile(Base):
     school: Mapped[str] = mapped_column(String(120), default="")
     major: Mapped[str] = mapped_column(String(120), default="")
     grade: Mapped[str] = mapped_column(String(50), default="")
+    class_name: Mapped[str] = mapped_column(String(120), default="")
     phone: Mapped[str] = mapped_column(String(30), default="")
     bio: Mapped[str] = mapped_column(Text, default="")
     updated_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
@@ -63,6 +64,8 @@ class BatchTask(Base):
     total_files: Mapped[int] = mapped_column(Integer, default=0)
     success_count: Mapped[int] = mapped_column(Integer, default=0)
     failed_count: Mapped[int] = mapped_column(Integer, default=0)
+    skipped_count: Mapped[int] = mapped_column(Integer, default=0)
+    enable_ai: Mapped[bool] = mapped_column(Boolean, default=True)
     summary_json: Mapped[str] = mapped_column(Text, default="[]")
     status: Mapped[str] = mapped_column(String(50), default="pending")
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)

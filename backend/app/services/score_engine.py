@@ -14,6 +14,64 @@ WEIGHTS = {
     "job_match": 0.20,
 }
 
+# 岗位类型权重模板（阶段二：按岗位切换评分权重）
+WEIGHT_TEMPLATES: dict[str, dict[str, float]] = {
+    "default": dict(WEIGHTS),
+    "数据分析": {
+        "content_completeness": 0.15,
+        "experience_match": 0.20,
+        "language_professionalism": 0.10,
+        "format_standardization": 0.10,
+        "highlight_strength": 0.20,
+        "job_match": 0.25,
+    },
+    "产品经理": {
+        "content_completeness": 0.15,
+        "experience_match": 0.25,
+        "language_professionalism": 0.15,
+        "format_standardization": 0.10,
+        "highlight_strength": 0.15,
+        "job_match": 0.20,
+    },
+    "前端开发": {
+        "content_completeness": 0.10,
+        "experience_match": 0.25,
+        "language_professionalism": 0.10,
+        "format_standardization": 0.10,
+        "highlight_strength": 0.15,
+        "job_match": 0.30,
+    },
+    "后端开发": {
+        "content_completeness": 0.10,
+        "experience_match": 0.25,
+        "language_professionalism": 0.10,
+        "format_standardization": 0.10,
+        "highlight_strength": 0.15,
+        "job_match": 0.30,
+    },
+    "新媒体运营": {
+        "content_completeness": 0.15,
+        "experience_match": 0.20,
+        "language_professionalism": 0.15,
+        "format_standardization": 0.10,
+        "highlight_strength": 0.25,
+        "job_match": 0.15,
+    },
+}
+
+
+def resolve_weights(profile_name: str) -> tuple[dict[str, float], str]:
+    from app.services.runtime_config import get_score_runtime_config
+
+    runtime = get_score_runtime_config()
+    templates: dict[str, dict[str, float]] = {**WEIGHT_TEMPLATES, **(runtime.get("templates") or {})}
+    if profile_name and profile_name in templates:
+        return templates[profile_name], profile_name
+    active = runtime.get("active_template") or "default"
+    if active in templates:
+        return templates[active], active
+    return WEIGHTS, "default"
+
 SECTION_LABELS = {
     "basic_info": "个人信息",
     "education": "教育背景",
@@ -47,9 +105,9 @@ JOB_PROFILES = {
         "focus": ["说明接口、数据库和部署责任", "补充并发、性能或稳定性指标", "写清业务场景和技术难点"],
     },
     "新媒体运营": {
-        "aliases": ["新媒体", "内容运营", "新媒体运营", "运营实习", "小红书运营", "公众号运营"],
-        "keywords": ["公众号", "小红书", "抖音", "视频", "剪辑", "文案", "选题", "运营", "账号", "阅读量", "粉丝", "互动"],
-        "focus": ["补充账号平台和目标用户", "量化阅读量、播放量、涨粉和互动", "展示选题、文案、排版、复盘能力"],
+        "aliases": ["新媒体", "新媒体运营", "新媒体运营实习", "新媒体运营专员", "内容运营", "运营实习", "小红书运营", "公众号运营", "短视频运营", "电商运营", "淘宝运营", "网络推广", "SEO", "SEM"],
+        "keywords": ["公众号", "小红书", "抖音", "短视频", "视频", "剪辑", "文案", "文案策划", "选题", "运营", "账号", "阅读量", "播放量", "粉丝", "互动", "评论", "收藏", "转发", "完播率", "转化率", "数据分析", "复盘", "ps", "pr", "ae", "seo", "sem", "网络整合营销", "淘宝运营", "新媒体营销", "推广"],
+        "focus": ["补充账号平台、目标用户和内容定位", "量化阅读量、播放量、涨粉、互动率和转化率", "展示选题、文案、排版、剪辑、投放和复盘能力"],
     },
     "短视频剪辑": {
         "aliases": ["短视频", "剪辑", "视频剪辑", "短视频剪辑师", "后期"],
@@ -57,15 +115,44 @@ JOB_PROFILES = {
         "focus": ["说明剪辑软件和制作流程", "补充播放量、完播率、点赞转化", "展示作品链接和个人负责片段"],
     },
     "电商美工": {
-        "aliases": ["电商美工", "淘宝美工", "视觉设计", "平面设计"],
-        "keywords": ["ps", "photoshop", "详情页", "主图", "海报", "banner", "视觉", "排版", "转化率", "店铺"],
+        "aliases": ["电商美工", "淘宝美工", "视觉设计", "平面设计", "平面设计师", "视觉设计师", "美工"],
+        "keywords": ["ps", "photoshop", "illustrator", "ai", "详情页", "主图", "海报", "banner", "视觉", "排版", "转化率", "店铺", "品牌视觉", "宣传物料"],
         "focus": ["补充作品类型和设计目标", "量化点击率、转化率或上新数量", "说明工具熟练度和审美风格"],
+    },
+    "影视后期": {
+        "aliases": ["影视后期", "后期剪辑", "视频后期", "影视剪辑", "后期制作", "剪辑师", "影视制作"],
+        "keywords": ["pr", "premiere", "ae", "after effects", "达芬奇", "调色", "剪辑", "包装", "字幕", "片头", "宣传片", "短视频", "纪录片", "音效"],
+        "focus": ["说明参与项目类型与个人负责环节", "补充成片时长、播放量或交付数量", "列出软件栈与制作流程"],
     },
 }
 
 ACTION_WORDS = ["负责", "主导", "参与", "协助", "设计", "开发", "运营", "策划", "优化", "分析", "搭建", "完成", "推进", "落地", "复盘"]
 RESULT_WORDS = ["提升", "增长", "降低", "减少", "完成", "达成", "获得", "排名", "播放", "阅读", "转化", "粉丝", "点赞", "收藏"]
 VAGUE_WORDS = ["很多", "比较", "非常", "一些", "各种", "良好", "较强", "熟悉相关", "有一定"]
+DOMAIN_SIGNAL_WORDS = [
+    "小红书",
+    "公众号",
+    "抖音",
+    "短视频",
+    "新媒体",
+    "内容运营",
+    "淘宝运营",
+    "网络整合营销",
+    "SEO",
+    "SEM",
+    "PS",
+    "PR",
+    "AE",
+    "剪映",
+    "文案",
+    "选题",
+    "推广",
+    "转化率",
+    "完播率",
+    "阅读量",
+    "播放量",
+    "涨粉",
+]
 METRIC_RE = re.compile(r"\d+(?:\.\d+)?\s*(?:%|人|次|个|项|篇|条|小时|天|周|月|元|w\+?|W\+?|万|k\+?|K\+?)")
 DATE_RE = re.compile(r"(?:20\d{2}|19\d{2})[./年-]?\s*(?:0?[1-9]|1[0-2])?")
 
@@ -103,6 +190,9 @@ def build_evidence(sections: dict[str, list[str]], text: str) -> dict[str, Any]:
     ][:5]
     long_lines = [line for line in lines if len(line) > 90][:5]
     vague_lines = [line for line in lines if _contains_any(line, VAGUE_WORDS)][:5]
+    course_lines = [line for line in lines if _is_course_or_training_line(line)][:5]
+    domain_keywords = [word for word in DOMAIN_SIGNAL_WORDS if _contains_any(text, [word])]
+    domain_signal_lines = [line for line in lines if _contains_any(line, DOMAIN_SIGNAL_WORDS)][:6]
     section_counts = {key: len(value) for key, value in sections.items()}
     missing_sections = [key for key in ["basic_info", "education", "internship", "projects", "skills"] if not sections.get(key)]
     return {
@@ -118,6 +208,9 @@ def build_evidence(sections: dict[str, list[str]], text: str) -> dict[str, Any]:
         "weak_experience_lines": weak_experience_lines,
         "sample_metric_lines": metric_lines[:3],
         "sample_action_lines": action_lines[:3],
+        "course_lines": course_lines,
+        "domain_keywords": domain_keywords[:12],
+        "domain_signal_lines": domain_signal_lines,
     }
 
 
@@ -133,6 +226,7 @@ def score_resume(parsed: dict[str, Any], target_position: str = "", job_descript
 
     evidence = build_evidence(sections, text)
     match_result = match_job(text, keywords, resolved_target_position, job_description, target_source)
+    weights, weight_template = resolve_weights(match_result.get("profile") or "")
     scores = {
         "content_completeness": _score_completeness(sections, evidence, parse_quality),
         "experience_match": _score_experience(sections, evidence, parse_quality),
@@ -141,14 +235,18 @@ def score_resume(parsed: dict[str, Any], target_position: str = "", job_descript
         "highlight_strength": _score_highlights(evidence, parse_quality),
         "job_match": match_result["score"],
     }
-    total = round(sum(scores[key] * WEIGHTS[key] for key in WEIGHTS), 1)
+    total = round(sum(scores[key] * weights[key] for key in weights), 1)
+    scores, total, score_reliability = _apply_parse_quality_policy(scores, total, parse_quality)
     return {
         "total_score": total,
+        "weight_template": weight_template,
+        "weights_used": weights,
         "target_position": resolved_target_position,
         "target_position_source": target_source,
         "parse_quality": parse_quality,
         "parse_warnings": parse_warnings,
         "scores": scores,
+        "score_reliability": score_reliability,
         "match_result": match_result,
         "evidence": evidence,
         "chart_data": {
@@ -172,7 +270,7 @@ def _score_completeness(sections: dict[str, list[str]], evidence: dict[str, Any]
     if sections.get("campus"):
         score += 3
     if parse_quality == "low":
-        score = max(score, 55)
+        score = min(score, 52)
     if len(evidence["missing_sections"]) >= 3 and parse_quality != "low":
         score -= 8
     return _clamp(score)
@@ -189,7 +287,7 @@ def _score_experience(sections: dict[str, list[str]], evidence: dict[str, Any], 
     if evidence["experience_line_count"] == 0 and parse_quality != "low":
         score -= 12
     if parse_quality == "low":
-        score = max(score, 55)
+        score = min(score, 50)
     return _clamp(score)
 
 
@@ -200,7 +298,7 @@ def _score_language(evidence: dict[str, Any], parse_quality: str) -> int:
     score -= min(len(evidence["vague_lines"]), 5) * 5
     score -= min(len(evidence["long_lines"]), 5) * 3
     if parse_quality == "low":
-        score = max(score, 55)
+        score = min(score, 55)
     return _clamp(score, 35, 100)
 
 
@@ -233,7 +331,7 @@ def _score_highlights(evidence: dict[str, Any], parse_quality: str) -> int:
     if not evidence["sample_metric_lines"] and parse_quality != "low":
         score -= 8
     if parse_quality == "low":
-        score = max(score, 55)
+        score = min(score, 50)
     return _clamp(score)
 
 
@@ -257,9 +355,27 @@ def _is_experience_detail(line: str) -> bool:
     return True
 
 
+def _is_course_or_training_line(line: str) -> bool:
+    if re.search(r"(主修课程|课程|实训|专业课|课程设计)", line):
+        return True
+    return _contains_any(line, ["SEO", "SEM", "小红书", "淘宝运营", "新媒体营销", "网络整合营销", "PS", "PR", "AE"])
+
+
 def _contains_any(text: str, words: list[str]) -> bool:
     lowered = text.lower()
     return any(word.lower() in lowered for word in words)
+
+
+def _apply_parse_quality_policy(
+    scores: dict[str, int],
+    total: float,
+    parse_quality: str,
+) -> tuple[dict[str, int], float, str]:
+    if parse_quality != "low":
+        return scores, total, "normal"
+    capped = {key: min(value, 62) for key, value in scores.items()}
+    capped_total = min(total, 58.0)
+    return capped, capped_total, "low_parse_capped"
 
 
 def _clamp(value: int, low: int = 35, high: int = 100) -> int:

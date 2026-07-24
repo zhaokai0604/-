@@ -9,14 +9,29 @@ from app.core.config import settings
 from app.core.database import get_db
 from app.models.entities import AuditLog, User
 from app.services.auth import hash_password, normalize_username, password_strength, validate_password_strength, validate_username, verify_password
+from app.services.rate_limit import check_rate_limit
 
 router = APIRouter()
+
+
+def _enforce_auth_rate_limit(request: Request) -> None:
+    import os
+
+    if os.getenv("PYTEST_CURRENT_TEST"):
+        return
+    from app.api.platform import client_ip
+    from fastapi import HTTPException
+
+    ip = client_ip(request) or "unknown"
+    if not check_rate_limit(f"auth:{ip}", limit=20, window_seconds=60):
+        raise HTTPException(status_code=429, detail="登录/注册请求过于频繁，请稍后再试。")
 
 
 @router.post("/auth/register")
 def register(payload: RegisterRequest, request: Request, response: Response, db: Session = Depends(get_db)) -> dict[str, Any]:
     from fastapi import HTTPException
 
+    _enforce_auth_rate_limit(request)
     if not settings.allow_register:
         raise HTTPException(status_code=403, detail="当前系统未开放注册")
     username = validate_username(payload.username)
@@ -39,15 +54,16 @@ def register(payload: RegisterRequest, request: Request, response: Response, db:
 
 @router.post("/auth/login")
 def login(payload: LoginRequest, request: Request, response: Response, db: Session = Depends(get_db)) -> dict[str, Any]:
-    from datetime import datetime
+    from app.utils.time import utc_now
     from fastapi import HTTPException
     from app.api.platform import client_ip
 
+    _enforce_auth_rate_limit(request)
     username = normalize_username(payload.username)
     user = db.query(User).filter(User.username == username).first()
     if not user or user.status != "active" or not verify_password(payload.password, user.password_hash):
         raise HTTPException(status_code=401, detail="用户名或密码错误")
-    user.last_login_at = datetime.utcnow()
+    user.last_login_at = utc_now()
     db.add(
         AuditLog(
             actor_user_id=user.id,

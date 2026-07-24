@@ -13,11 +13,12 @@ router = APIRouter()
 
 def profile_payload(profile: UserProfile | None) -> dict[str, Any]:
     if not profile:
-        return {"school": "", "major": "", "grade": "", "phone": "", "bio": ""}
+        return {"school": "", "major": "", "grade": "", "class_name": "", "phone": "", "bio": ""}
     return {
         "school": profile.school or "",
         "major": profile.major or "",
         "grade": profile.grade or "",
+        "class_name": profile.class_name or "",
         "phone": profile.phone or "",
         "bio": profile.bio or "",
         "updated_at": profile.updated_at.isoformat() if profile.updated_at else "",
@@ -50,6 +51,8 @@ def update_my_profile(payload: UserProfileRequest, request: Request, db: Session
         profile.major = payload.major.strip()[:120]
     if payload.grade is not None:
         profile.grade = payload.grade.strip()[:50]
+    if payload.class_name is not None:
+        profile.class_name = payload.class_name.strip()[:120]
     if payload.phone is not None:
         profile.phone = payload.phone.strip()[:30]
     if payload.bio is not None:

@@ -28,15 +28,20 @@ def validate_upload(filename: str, size: int, allow_zip: bool = False) -> None:
         raise HTTPException(status_code=400, detail=f"文件超过 {max_mb}MB 限制。")
 
 
-async def save_upload(file: UploadFile, directory: Path | None = None) -> Path:
+def save_upload_bytes(content: bytes, filename: str, directory: Path | None = None) -> Path:
     directory = directory or settings.uploads_dir
     directory.mkdir(parents=True, exist_ok=True)
-    content = await file.read()
-    validate_upload(file.filename or "", len(content), allow_zip=True)
-    stored_name = f"{uuid.uuid4().hex}{safe_suffix(file.filename or '')}"
+    suffix = safe_suffix(filename)
+    validate_upload(filename, len(content), allow_zip=suffix == ".zip")
+    stored_name = f"{uuid.uuid4().hex}{suffix}"
     stored_path = directory / stored_name
     stored_path.write_bytes(content)
     return stored_path
+
+
+async def save_upload(file: UploadFile, directory: Path | None = None) -> Path:
+    content = await file.read()
+    return save_upload_bytes(content, file.filename or "", directory)
 
 
 def remove_path(path_value: str | Path | None) -> None:

@@ -1,4 +1,5 @@
 .env
+.env.local
 __pycache__/
 *.pyc
 .venv/
@@ -6,10 +7,15 @@ __pycache__/
 node_modules/
 dist/
 logs/
+*.log
+*.err.log
+*.tar
+*.tar.gz
 .superpowers/
 data/uploads/*
 data/extracted/*
 data/reports/*
+data/*.db
 !data/uploads/.gitkeep
 !data/extracted/.gitkeep
 !data/reports/.gitkeep

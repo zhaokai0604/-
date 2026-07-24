@@ -42,11 +42,11 @@ const platform = usePlatform()
         <div class="panel-heading"><h3>分析模式</h3></div>
         <label class="switch-row">
           <input v-model="platform.enableAi" type="checkbox" />
-          <span>启用 AI 智能分析</span>
+          <span>启用 AI 深度优化</span>
         </label>
         <dl class="kv-list">
           <div><dt>当前模式</dt><dd>{{ platform.modeLabel }}</dd></div>
-          <div><dt>失败回退</dt><dd>网络异常或 API 不可用时自动使用规则引擎</dd></div>
+          <div><dt>后台优化</dt><dd>先生成可用结果，AI 优化完成后自动补齐</dd></div>
         </dl>
       </section>
 
@@ -68,6 +68,10 @@ const platform = usePlatform()
           <label class="field">
             <span>年级</span>
             <input v-model.trim="platform.userProfile.grade" placeholder="例如：2022 级 / 大三" />
+          </label>
+          <label class="field">
+            <span>班级</span>
+            <input v-model.trim="platform.userProfile.class_name" placeholder="例如：计科 2201 班" />
           </label>
           <label class="field">
             <span>手机</span>

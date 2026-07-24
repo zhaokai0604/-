@@ -6,10 +6,10 @@ services:
     container_name: resume-ai-mysql
     restart: unless-stopped
     environment:
-      MYSQL_ROOT_PASSWORD: root123456
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-changeme}
       MYSQL_DATABASE: resume_ai
-      MYSQL_USER: resume
-      MYSQL_PASSWORD: resume123
+      MYSQL_USER: ${MYSQL_USER:-resume}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD:-changeme}
     ports:
       - "3307:3306"
     volumes:
@@ -17,7 +17,7 @@ services:
       - ./database.sql:/docker-entrypoint-initdb.d/database.sql:ro
     command: ["mysqld", "--character-set-server=utf8mb4", "--collation-server=utf8mb4_unicode_ci"]
     healthcheck:
-      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-uresume", "-presume123"]
+      test: ["CMD-SHELL", "mysqladmin ping -h localhost -u$$MYSQL_USER -p$$MYSQL_PASSWORD || exit 1"]
       interval: 10s
       timeout: 5s
       retries: 10
@@ -41,8 +41,8 @@ services:
     container_name: resume-ai-backend
     restart: unless-stopped
     environment:
-      DATABASE_URL: mysql+pymysql://resume:resume123@mysql:3306/resume_ai?charset=utf8mb4
-      SESSION_SECRET: ${SESSION_SECRET:-resume-ai-local-dev-secret-change-me}
+      DATABASE_URL: mysql+pymysql://${MYSQL_USER:-resume}:${MYSQL_PASSWORD:-changeme}@mysql:3306/resume_ai?charset=utf8mb4
+      SESSION_SECRET: ${SESSION_SECRET:-}
       SESSION_COOKIE_NAME: ${SESSION_COOKIE_NAME:-resume_ai_session}
       SESSION_EXPIRE_HOURS: ${SESSION_EXPIRE_HOURS:-24}
       SESSION_COOKIE_SECURE: ${SESSION_COOKIE_SECURE:-false}
@@ -78,10 +78,10 @@ services:
     restart: unless-stopped
     command: ["celery", "-A", "app.tasks.celery_app:celery_app", "worker", "--loglevel=info"]
     environment:
-      DATABASE_URL: mysql+pymysql://resume:resume123@mysql:3306/resume_ai?charset=utf8mb4
+      DATABASE_URL: mysql+pymysql://${MYSQL_USER:-resume}:${MYSQL_PASSWORD:-changeme}@mysql:3306/resume_ai?charset=utf8mb4
       REDIS_URL: ${REDIS_URL:-redis://redis:6379/0}
       USE_CELERY: "true"
-      SESSION_SECRET: ${SESSION_SECRET:-resume-ai-local-dev-secret-change-me}
+      SESSION_SECRET: ${SESSION_SECRET:-}
       DEEPSEEK_API_KEY: ${DEEPSEEK_API_KEY:-}
     volumes:
       - ./data:/app/data

@@ -1,6 +1,7 @@
 import shutil
 import uuid
 import zipfile
+from dataclasses import dataclass, field
 from pathlib import Path
 
 from fastapi import HTTPException
@@ -13,10 +14,17 @@ UTF8_FILENAME_FLAG = 0x800
 WINDOWS_ZIP_ENCODINGS = ("gb18030", "gbk")
 
 
-def safe_extract_zip(zip_path: Path) -> list[Path]:
+@dataclass
+class ZipExtractResult:
+    files: list[Path] = field(default_factory=list)
+    skipped: list[dict[str, str]] = field(default_factory=list)
+
+
+def safe_extract_zip(zip_path: Path) -> ZipExtractResult:
     target_dir = settings.extracted_dir / uuid.uuid4().hex
     target_dir.mkdir(parents=True, exist_ok=True)
     extracted: list[Path] = []
+    skipped: list[dict[str, str]] = []
     total_size = 0
     max_total = settings.max_zip_total_size_mb * 1024 * 1024
     try:
@@ -32,6 +40,12 @@ def safe_extract_zip(zip_path: Path) -> list[Path]:
                     raise HTTPException(status_code=400, detail=f"ZIP 解压后超过 {settings.max_zip_total_size_mb}MB 限制。")
                 suffix = Path(member_name).suffix.lower()
                 if suffix not in ALLOWED_SINGLE_EXTENSIONS:
+                    skipped.append(
+                        {
+                            "filename": Path(member_name).name or member_name,
+                            "reason": f"不支持的文件类型{suffix or '（无后缀）'}，仅支持 .docx / .pdf",
+                        }
+                    )
                     continue
                 destination = _unique_destination(target_dir, Path(member_name).name)
                 with archive.open(member) as source, destination.open("wb") as output:
@@ -40,8 +54,11 @@ def safe_extract_zip(zip_path: Path) -> list[Path]:
     except zipfile.BadZipFile as exc:
         raise HTTPException(status_code=400, detail="ZIP 文件损坏或格式不正确。") from exc
     if not extracted:
-        raise HTTPException(status_code=400, detail="ZIP 中未找到支持的 .docx 或 .pdf 简历。")
-    return extracted
+        detail = "ZIP 中未找到支持的 .docx 或 .pdf 简历。"
+        if skipped:
+            detail = f"{detail}（已跳过 {len(skipped)} 个不支持的文件）"
+        raise HTTPException(status_code=400, detail=detail)
+    return ZipExtractResult(files=extracted, skipped=skipped)
 
 
 def decode_zip_member_name(member: zipfile.ZipInfo) -> str:

@@ -30,6 +30,7 @@ const platform = usePlatform()
           <span class="hero-feature-pill"><FileText :size="14" />智能解析</span>
           <span class="hero-feature-pill"><BriefcaseBusiness :size="14" />岗位匹配</span>
           <span class="hero-feature-pill"><Download :size="14" />报告导出</span>
+          <span class="hero-feature-pill"><FileText :size="14" />模拟面试</span>
         </div>
         <div class="panel-actions">
           <button class="primary-action hero-cta" @click="platform.setActiveTab('single')">
@@ -56,10 +57,10 @@ const platform = usePlatform()
               <small>最近评分</small>
             </div>
           </div>
-          <div v-else class="hero-score-empty">
+          <button v-else type="button" class="hero-score-empty" @click="platform.setActiveTab('single')">
             <FileText :size="32" />
             <span>上传第一份简历</span>
-          </div>
+          </button>
           <dl class="hero-side-list">
             <div><dt>身份</dt><dd>{{ platform.currentIdentityLabel }}</dd></div>
             <div><dt>模式</dt><dd>{{ platform.modeLabel }}</dd></div>
@@ -91,22 +92,53 @@ const platform = usePlatform()
       </button>
     </section>
 
-    <section class="journey-grid">
+    <section class="journey-grid platform-workflow">
       <article class="journey-card">
         <span class="journey-step">01</span>
-        <strong>上传简历</strong>
-        <p>支持 Word / PDF 格式，上传当前要投递的简历版本。</p>
+        <strong>注册登录</strong>
+        <p>进入个人工作台，数据按账号隔离保存。</p>
       </article>
       <article class="journey-card">
         <span class="journey-step">02</span>
-        <strong>匹配岗位</strong>
-        <p>选择岗位模板或粘贴 JD，让评分围绕真实投递方向展开。</p>
+        <strong>上传主简历</strong>
+        <p>完成结构化解析，沉淀简历资产。</p>
       </article>
       <article class="journey-card">
         <span class="journey-step">03</span>
-        <strong>查看报告</strong>
-        <p>获取评分、诊断与修改建议，导出报告指导下一轮优化。</p>
+        <strong>选择岗位 JD</strong>
+        <p>从岗位库选择或粘贴 JD，发起匹配分析。</p>
       </article>
+      <article class="journey-card">
+        <span class="journey-step">04</span>
+        <strong>查看评分诊断</strong>
+        <p>获取多维评分、证据匹配与修改建议。</p>
+      </article>
+      <article class="journey-card">
+        <span class="journey-step">05</span>
+        <strong>优化与面试</strong>
+        <p>AI 改写、模板推荐、模拟面试与语音练习。</p>
+      </article>
+      <article class="journey-card">
+        <span class="journey-step">06</span>
+        <strong>报告与任务</strong>
+        <p>导出 Word/PDF，批量任务在任务中心追踪。</p>
+      </article>
+    </section>
+
+    <section v-if="platform.auth.authenticated" class="panel profile-summary-panel">
+      <div class="panel-heading">
+        <div>
+          <h3>个人资料</h3>
+          <p class="panel-subtitle">完善学校与专业信息，便于教师端统计分析。</p>
+        </div>
+        <button class="secondary-action" type="button" @click="platform.openSettingsPanel()">编辑资料</button>
+      </div>
+      <dl class="kv-list">
+        <div><dt>学校</dt><dd>{{ platform.userProfile.school || '未填写' }}</dd></div>
+        <div><dt>专业</dt><dd>{{ platform.userProfile.major || '未填写' }}</dd></div>
+        <div><dt>年级</dt><dd>{{ platform.userProfile.grade || '未填写' }}</dd></div>
+        <div><dt>班级</dt><dd>{{ platform.userProfile.class_name || '未填写' }}</dd></div>
+      </dl>
     </section>
 
     <section class="dashboard-grid">

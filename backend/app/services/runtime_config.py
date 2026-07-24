@@ -9,14 +9,9 @@ AI_PROVIDER_OPTIONS = {"deepseek", "openai_compatible"}
 
 
 def load_runtime_config() -> dict[str, Any]:
-    path = _runtime_config_path()
-    if not path.exists():
-        return {}
-    try:
-        data = json.loads(path.read_text(encoding="utf-8"))
-    except (OSError, json.JSONDecodeError):
-        return {}
-    return data if isinstance(data, dict) else {}
+    from app.services.config_cache import load_runtime_config_cached
+
+    return load_runtime_config_cached()
 
 
 def get_ai_runtime_config() -> dict[str, Any]:
@@ -77,6 +72,9 @@ def update_ai_runtime_config(payload: dict[str, Any]) -> dict[str, Any]:
     path = _runtime_config_path()
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(json.dumps(runtime_config, ensure_ascii=False, indent=2), encoding="utf-8")
+    from app.services.config_cache import invalidate_runtime_config_cache
+
+    invalidate_runtime_config_cache()
     return get_ai_runtime_config()
 
 
@@ -90,3 +88,52 @@ def _mask_secret(value: str) -> str:
     if len(value) <= 8:
         return "*" * len(value)
     return f"{value[:4]}{'*' * (len(value) - 8)}{value[-4:]}"
+
+
+def get_score_runtime_config() -> dict[str, Any]:
+    from app.services.score_engine import WEIGHT_TEMPLATES
+
+    config = load_runtime_config().get("score", {})
+    if not isinstance(config, dict):
+        config = {}
+    active_template = str(config.get("active_template") or "default").strip() or "default"
+    templates = config.get("templates") if isinstance(config.get("templates"), dict) else {}
+    merged = {**WEIGHT_TEMPLATES, **templates}
+    return {
+        "active_template": active_template if active_template in merged else "default",
+        "available_templates": list(merged.keys()),
+        "templates": merged,
+        "using_local_override": bool(templates) or "active_template" in config,
+    }
+
+
+def update_score_runtime_config(payload: dict[str, Any]) -> dict[str, Any]:
+    from app.services.score_engine import WEIGHTS
+
+    runtime_config = load_runtime_config()
+    score_config = runtime_config.get("score", {})
+    if not isinstance(score_config, dict):
+        score_config = {}
+
+    active_template = str(payload.get("active_template") or score_config.get("active_template") or "default").strip() or "default"
+    templates = score_config.get("templates") if isinstance(score_config.get("templates"), dict) else {}
+    if isinstance(payload.get("templates"), dict):
+        for name, weights in payload["templates"].items():
+            if not isinstance(weights, dict):
+                continue
+            normalized = {key: float(weights[key]) for key in WEIGHTS if key in weights}
+            if normalized:
+                total = sum(normalized.values())
+                if total > 0:
+                    templates[name] = {key: round(value / total, 4) for key, value in normalized.items()}
+
+    score_config["active_template"] = active_template
+    score_config["templates"] = templates
+    runtime_config["score"] = score_config
+    path = _runtime_config_path()
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(json.dumps(runtime_config, ensure_ascii=False, indent=2), encoding="utf-8")
+    from app.services.config_cache import invalidate_runtime_config_cache
+
+    invalidate_runtime_config_cache()
+    return get_score_runtime_config()

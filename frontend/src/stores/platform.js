@@ -9,15 +9,21 @@ import {
 import { computed, reactive, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 
+import { installRouteGuards } from '../router'
 import {
   analyzeResume,
   analyzeZip,
+  copyJobProfilePreset,
   createJobProfile,
   deleteAdminRecord,
   deleteHistory,
   deleteHistoryBulk,
   deleteJobProfile,
   fetchAdminAiConfig,
+  fetchAdminScoreConfig,
+  cleanupAdminStorage,
+  teacherStatsExportUrl,
+  saveAdminScoreConfig,
   fetchAdminAuditLogs,
   fetchAdminJobs,
   fetchAdminRecords,
@@ -28,11 +34,16 @@ import {
   fetchHealth,
   fetchHistory,
   fetchHistoryDetail,
+  fetchHistoryStatus,
   fetchJobProfiles,
+  fetchJobProfilePresets,
   fetchRecordVersions,
   fetchReports,
   fetchTasks,
   fetchTeacherStats,
+  fetchTeacherClasses,
+  fetchTeacherRecords,
+  fetchResumeTemplateCatalog,
   fetchUserProfile,
   fetchVersionCompare,
   importGuestHistory,
@@ -41,6 +52,10 @@ import {
   pauseBatchTask,
   registerUser,
   retryBatchTask,
+  retryHistoryAnalysis,
+  refreshInterviewPrep,
+  refreshRewritePreview,
+  rewriteReportUrl,
   saveAdminAiConfig,
   sourceResumeUrl,
   updateJobProfile,
@@ -48,6 +63,8 @@ import {
   updateAdminUserRole,
   updateUserProfile,
   resetAdminUserPassword,
+  setUnauthorizedHandler,
+  isBackendUnavailableText,
 } from '../api/client'
 
 let platformInstance = null
@@ -70,18 +87,32 @@ function createPlatformStore(router, route) {
   const enableAi = ref(localStorage.getItem('enableAi') !== 'false')
   const loading = ref(false)
   const detailLoading = ref(false)
+  const analysisPhase = ref(0)
+  const analysisPhaseTimer = ref(null)
+  const ANALYSIS_PHASES = [
+    '正在提取简历正文与板块…',
+    '正在计算六维评分…',
+    '正在分析岗位匹配度…',
+    '正在生成诊断与优化建议…',
+  ]
+  const interviewPrepLoading = ref(false)
+  const rewritePreviewLoading = ref(false)
+  const detailError = ref('')
   const error = ref('')
   const healthStatus = ref(null)
   const result = ref(null)
   const batchResult = ref(null)
   const history = ref([])
+  const historyLoading = ref(false)
   const tasks = ref([])
   const taskSummary = ref({ pending: 0, processing: 0, paused: 0, success: 0, failed: 0, partial_success: 0 })
   const reports = ref([])
   const jobProfiles = ref([])
+  const jobProfilePresets = ref([])
   const jobsLoading = ref(false)
   const jobsMessage = ref('')
   const selectedJobProfileId = ref(0)
+  const selectedJobProfileKey = ref('0')
   const editingJobProfileId = ref(0)
   const jobProfileForm = ref({
     name: '',
@@ -92,6 +123,8 @@ function createPlatformStore(router, route) {
     status: 'active',
   })
   const batchPollingId = ref(null)
+  const singlePollingId = ref(null)
+  const tasksLoading = ref(false)
   const selectedRecordIds = ref([])
   const authPanelOpen = ref(false)
   const settingsPanelOpen = ref(false)
@@ -112,7 +145,7 @@ function createPlatformStore(router, route) {
     password: '',
     confirmPassword: '',
   })
-  const userProfile = ref({ school: '', major: '', grade: '', phone: '', bio: '' })
+  const userProfile = ref({ school: '', major: '', grade: '', class_name: '', phone: '', bio: '' })
   const profileLoading = ref(false)
   const profileMessage = ref('')
   const adminStats = ref(null)
@@ -134,8 +167,18 @@ function createPlatformStore(router, route) {
     provider_options: [],
     model_suggestions: [],
   })
+  const adminScoreConfig = ref({
+    active_template: 'default',
+    available_templates: [],
+    templates: {},
+    using_local_override: false,
+  })
   const teacherStats = ref(null)
+  const teacherClassPanel = ref(null)
+  const teacherRecords = ref([])
   const teacherLoading = ref(false)
+  const teacherClassLoading = ref(false)
+  const teacherRecordsLoading = ref(false)
   const teacherMessage = ref('')
   const recordVersions = ref([])
   const versionCompare = ref(null)
@@ -146,6 +189,7 @@ function createPlatformStore(router, route) {
     dashboard: { name: 'dashboard' },
     single: { name: 'workspace-analyze' },
     batch: { name: 'workspace-batch' },
+    interview: { name: 'workspace-interview' },
     jobs: { name: 'workspace-jobs' },
     tasks: { name: 'workspace-tasks' },
     reports: { name: 'workspace-reports' },
@@ -154,6 +198,8 @@ function createPlatformStore(router, route) {
     'admin-jobs': { name: 'admin-jobs' },
     'admin-system': { name: 'admin-system' },
     'teacher-dashboard': { name: 'teacher-dashboard' },
+    'teacher-classes': { name: 'teacher-classes' },
+    'teacher-records': { name: 'teacher-records' },
   }
 
   const breadcrumbLabel = computed(() => {
@@ -161,6 +207,7 @@ function createPlatformStore(router, route) {
       dashboard: '平台工作台',
       single: '工作区 / 单份分析',
       batch: '工作区 / 批量分析',
+      interview: '工作区 / 面试训练',
       jobs: '工作区 / 岗位库',
       tasks: '工作区 / 任务中心',
       reports: '工作区 / 报告中心',
@@ -170,6 +217,8 @@ function createPlatformStore(router, route) {
       'admin-jobs': '管理后台 / 岗位模板',
       'admin-system': '管理后台 / 系统',
       'teacher-dashboard': '指导端 / 数据看板',
+      'teacher-classes': '指导端 / 班级分析',
+      'teacher-records': '指导端 / 学生概览',
     }
     return labels[activeTab.value] || '平台工作台'
   })
@@ -179,6 +228,7 @@ function createPlatformStore(router, route) {
       dashboard: '平台工作台',
       single: '单份简历分析',
       batch: '批量分析工作区',
+      interview: '面试训练',
       jobs: '岗位库',
       tasks: '分析任务中心',
       reports: '报告中心',
@@ -188,8 +238,10 @@ function createPlatformStore(router, route) {
       'admin-jobs': '岗位模板管理',
       'admin-system': '系统管理',
       'teacher-dashboard': '指导数据看板',
+      'teacher-classes': '班级分析面板',
+      'teacher-records': '学生分析概览',
     }
-    return titles[activeTab.value] || '简历评价智能体'
+    return titles[activeTab.value] || '简析智评'
   })
 
   const pageSubtitle = computed(() => {
@@ -197,6 +249,7 @@ function createPlatformStore(router, route) {
       dashboard: '概览简历资产、分析任务与报告，快速进入常用功能。',
       single: '上传简历并填写目标岗位，系统将生成结构化评价报告。',
       batch: '批量上传简历压缩包，后台自动逐份分析并汇总结果。',
+      interview: '从已完成分析的简历中生成面试题与模拟训练，不占用简历分析流程。',
       jobs: '管理常用岗位模板，在分析时一键套用 JD 与岗位要求。',
       tasks: '查看单份与批量分析任务的执行状态与进度。',
       reports: '集中下载已生成的 Word / PDF 评价报告。',
@@ -206,11 +259,13 @@ function createPlatformStore(router, route) {
       'admin-jobs': '查看全平台岗位模板及归属用户。',
       'admin-system': '大模型配置、记录元数据与安全审计。',
       'teacher-dashboard': '按院校、专业、年级查看学生活跃度与评分分布。',
+      'teacher-classes': '按班级查看学生规模、均分与热门投递岗位。',
+      'teacher-records': '查看学生分析元数据，不含简历正文。',
     }
     return subtitles[activeTab.value] || ''
   })
 
-  const modeLabel = computed(() => (enableAi.value ? 'AI 智能分析' : '规则引擎分析'))
+  const modeLabel = computed(() => (enableAi.value ? 'AI 深度优化' : '快速规则分析'))
   const historyCount = computed(() => history.value.length)
   const taskCount = computed(() => tasks.value.length)
   const reportCount = computed(() => reports.value.length)
@@ -229,10 +284,15 @@ function createPlatformStore(router, route) {
   const batchTaskPaused = computed(() => batchResult.value?.status === 'paused')
   const batchTaskRetriable = computed(() => ['failed', 'paused'].includes(batchResult.value?.status || ''))
   const batchProgress = computed(() => {
-    if (!batchResult.value?.total_files) {
+    const batch = batchResult.value
+    if (!batch) {
       return 0
     }
-    return Math.min(100, Math.round((batchResult.value.processed_files || 0) / batchResult.value.total_files * 100))
+    const total = (batch.total_files || 0) + (batch.skipped_count || 0)
+    if (!total) {
+      return 0
+    }
+    return Math.min(100, Math.round((batch.processed_files || 0) / total * 100))
   })
 
   const currentIdentityLabel = computed(() => {
@@ -269,9 +329,21 @@ function createPlatformStore(router, route) {
   const isTeacher = computed(() => auth.value.authenticated && auth.value.user?.role === 'teacher')
   const isTeacherOrAdmin = computed(() => isAdmin.value || isTeacher.value)
   const allowRegister = computed(() => auth.value.platform?.allow_register !== false)
-  const selectedJobProfile = computed(() => jobProfiles.value.find((item) => item.id === selectedJobProfileId.value) || null)
+  const selectedJobProfile = computed(() => {
+    if (selectedJobProfileKey.value.startsWith('preset:')) {
+      const presetId = selectedJobProfileKey.value.slice('preset:'.length)
+      return jobProfilePresets.value.find((item) => item.id === presetId) || null
+    }
+    return jobProfiles.value.find((item) => item.id === selectedJobProfileId.value) || null
+  })
   const jobProfileOptions = computed(() => jobProfiles.value.map((profile) => ({
     ...profile,
+    optionKey: `user:${profile.id}`,
+    optionLabel: profile.category ? `${profile.name} / ${profile.category}` : profile.name,
+  })))
+  const jobProfilePresetOptions = computed(() => jobProfilePresets.value.map((profile) => ({
+    ...profile,
+    optionKey: `preset:${profile.id}`,
     optionLabel: profile.category ? `${profile.name} / ${profile.category}` : profile.name,
   })))
   const dashboardCards = computed(() => [
@@ -287,13 +359,15 @@ function createPlatformStore(router, route) {
     return '当前任务中心运行稳定'
   })
   const latestResumeRecord = computed(() => history.value[0] || null)
+  const showBackButton = computed(() => !['dashboard', 'login', 'register'].includes(route.name || ''))
 
   const isAdminTab = (tab) => ['admin-users', 'admin-jobs', 'admin-system'].includes(tab)
-  const isTeacherTab = (tab) => tab === 'teacher-dashboard'
+  const isTeacherTab = (tab) => ['teacher-dashboard', 'teacher-classes', 'teacher-records'].includes(tab)
 
   function routeToTab(currentRoute) {
     if (currentRoute.name === 'workspace-analyze') return 'single'
     if (currentRoute.name === 'workspace-batch') return 'batch'
+    if (currentRoute.name === 'workspace-interview') return 'interview'
     if (currentRoute.name === 'workspace-jobs') return 'jobs'
     if (currentRoute.name === 'workspace-tasks') return 'tasks'
     if (currentRoute.name === 'workspace-reports') return 'reports'
@@ -303,6 +377,8 @@ function createPlatformStore(router, route) {
     if (currentRoute.name === 'admin-jobs') return 'admin-jobs'
     if (currentRoute.name === 'admin-system') return 'admin-system'
     if (currentRoute.name === 'teacher-dashboard') return 'teacher-dashboard'
+    if (currentRoute.name === 'teacher-classes') return 'teacher-classes'
+    if (currentRoute.name === 'teacher-records') return 'teacher-records'
     return 'dashboard'
   }
 
@@ -326,13 +402,80 @@ function createPlatformStore(router, route) {
     }
   }
 
+  function fallbackBackTarget() {
+    const name = route.name
+    if (name === 'workspace-resume-detail') {
+      return tabRouteMap.history
+    }
+    if (name === 'teacher-classes' || name === 'teacher-records') {
+      return tabRouteMap['teacher-dashboard']
+    }
+    if (name === 'admin-jobs' || name === 'admin-system') {
+      return tabRouteMap['admin-users']
+    }
+    return tabRouteMap.dashboard
+  }
+
+  async function goBack() {
+    error.value = ''
+    const previousPath = window.history.state?.back
+    if (previousPath && previousPath !== route.fullPath) {
+      router.back()
+      return
+    }
+    await navigateToRoute(fallbackBackTarget())
+  }
+
   function analysisModeLabel(mode) {
     const labels = {
-      deepseek: 'DeepSeek 已使用',
-      offline_fallback: 'DeepSeek 不可用，已回退离线规则分析',
-      offline: '离线规则分析',
+      ai_first: '快速规则分析',
+      deepseek: 'AI 深度优化已完成',
+      core: '快速规则分析',
+      offline_fallback: '快速规则分析',
+      offline: '快速规则分析',
     }
     return labels[mode] || mode || '未知'
+  }
+
+  function displayAnalysisModeLabel(payload) {
+    if (!payload) {
+      return '未知'
+    }
+    if (payload.ai_requested) {
+      const status = payload.ai_enhancement_status || ''
+      if (payload.analysis_mode === 'deepseek' || status === 'success') {
+        return 'AI 深度优化已完成'
+      }
+      if (status === 'pending' || status === 'processing') {
+        return 'AI 深度优化中'
+      }
+      return analysisModeLabel(payload.analysis_mode)
+    }
+    if (payload.analysis_mode_label && payload.analysis_mode_label !== 'AI 智能分析') {
+      return payload.analysis_mode_label
+    }
+    return analysisModeLabel(payload.analysis_mode)
+  }
+
+  function displayAnalysisModeClass(payload) {
+    if (!payload) {
+      return 'offline'
+    }
+    if (payload.ai_requested) {
+      const status = payload.ai_enhancement_status || ''
+      if (payload.analysis_mode === 'deepseek' || status === 'success') {
+        return 'deepseek'
+      }
+      if (status === 'pending' || status === 'processing') {
+        return 'ai'
+      }
+      return payload.analysis_mode || 'offline'
+    }
+    return payload.analysis_mode || 'offline'
+  }
+
+  function shouldShowAiWorking(payload = result.value) {
+    return Boolean(payload?.ai_requested) && ['pending', 'processing'].includes(payload?.ai_enhancement_status || '')
   }
 
   function targetSourceLabel(source) {
@@ -353,10 +496,170 @@ function createPlatformStore(router, route) {
     return labels[quality] || '解析质量未知'
   }
 
+  const SECTION_LABELS = {
+    basic_info: '个人信息',
+    education: '教育背景',
+    internship: '实习/工作经历',
+    projects: '项目/实训经历',
+    campus: '校园实践',
+    skills: '技能证书',
+    awards: '荣誉奖项',
+    summary: '自我评价/求职意向',
+  }
+
+  function sectionLabel(key) {
+    return SECTION_LABELS[key] || key || '其他'
+  }
+
+  function confidenceLabel(confidence) {
+    const value = Number(confidence) || 0
+    if (value >= 0.85) return '识别较完整'
+    if (value >= 0.65) return '基本识别'
+    return '识别偏弱'
+  }
+
+  function scoreGradeLabel(score) {
+    const value = Number(score) || 0
+    if (value >= 90) return '优秀'
+    if (value >= 80) return '良好'
+    if (value >= 70) return '中等'
+    if (value >= 60) return '待提升'
+    return '需加强'
+  }
+
+  function scoreGradeTone(score) {
+    const value = Number(score) || 0
+    if (value >= 85) return 'strong'
+    if (value >= 70) return 'mid'
+    return 'weak'
+  }
+
+  function matchRatePercent(result) {
+    if (result?.match_rate != null) return Math.round(Number(result.match_rate))
+    const matched = result?.matched_keywords?.length || 0
+    const missing = result?.missing_keywords?.length || 0
+    const total = matched + missing
+    if (!total) return null
+    return Math.round((matched / total) * 100)
+  }
+
+  function priorityLabel(priority) {
+    const labels = {
+      urgent: '紧急',
+      high: '优先',
+      medium: '建议',
+    }
+    return labels[priority] || '建议'
+  }
+
+  function buildActionRoadmapFallback(result) {
+    if (result?.action_roadmap?.length) {
+      return result.action_roadmap
+    }
+    const items = []
+    if (result?.parse_quality === 'low') {
+      items.push({
+        priority: 'urgent',
+        title: '修复文件解析',
+        detail: '正文提取不足，请更换为可选中文本的 DOCX 或文字版 PDF 后重新分析。',
+        action_tab: 'diagnosis',
+      })
+    }
+    for (const item of (result?.structured_suggestions || []).slice(0, 2)) {
+      if (!item?.problem) continue
+      items.push({
+        priority: 'high',
+        title: item.problem,
+        detail: item.direction || item.impact || '',
+        action_tab: 'diagnosis',
+      })
+    }
+    if (result?.missing_keywords?.length) {
+      items.push({
+        priority: 'medium',
+        title: '补充岗位关键词',
+        detail: `建议写入：${result.missing_keywords.slice(0, 5).join('、')}`,
+        action_tab: 'match',
+      })
+    }
+    return items.slice(0, 5)
+  }
+
+  function buildReportSummary(result) {
+    if (!result?.scores) return ''
+    const scoreEntries = Object.entries(result.scores)
+      .filter(([key]) => key !== 'total_score')
+      .map(([key, value]) => ({
+        key,
+        value: Number(value) || 0,
+        label: {
+          content_completeness: '内容完整性',
+          experience_match: '经历相关性',
+          language_professionalism: '语言专业性',
+          format_standardization: '格式规范性',
+          highlight_strength: '亮点量化程度',
+          job_match: '岗位语义匹配',
+        }[key] || key,
+      }))
+    if (!scoreEntries.length) return ''
+    const sorted = [...scoreEntries].sort((a, b) => a.value - b.value)
+    const weakest = sorted[0]
+    const strongest = sorted[sorted.length - 1]
+    const total = Number(result.total_score) || 0
+    let tone = '整体表现良好'
+    if (total < 70) tone = '仍有较大提升空间'
+    else if (total < 85) tone = '基础扎实，可针对性优化'
+    const diagnosisCount = (result.diagnosis?.length || 0) + (result.structured_suggestions?.length || 0)
+    const parts = [
+      `综合得分 ${total} 分，${tone}。`,
+      `最强项为「${strongest.label}」（${strongest.value} 分），建议优先补强「${weakest.label}」（${weakest.value} 分）。`,
+    ]
+    if (diagnosisCount > 0) {
+      parts.push(`系统识别出 ${diagnosisCount} 条可执行优化建议，详见「诊断与优化」分区。`)
+    }
+    if (result.parse_quality === 'low') {
+      parts.push('正文提取偏弱，建议更换标准 DOCX/PDF 后重新分析。')
+    }
+    return parts.join('')
+  }
+
   function parseQualityTone(quality) {
     if (quality === 'high') return 'success'
     if (quality === 'low') return 'danger'
     return 'warning'
+  }
+
+  function batchItemStatusLabel(status) {
+    const labels = {
+      success: '成功',
+      failed: '失败',
+      skipped: '跳过',
+    }
+    return labels[status] || status || '未知'
+  }
+
+  function batchItemStatusTone(status) {
+    if (status === 'success') return 'success'
+    if (status === 'failed') return 'danger'
+    if (status === 'skipped') return 'warning'
+    return 'processing'
+  }
+
+  function scoreReliabilityLabel(reliability) {
+    const labels = {
+      low_parse_capped: '低解析封顶',
+      normal: '',
+    }
+    return labels[reliability] || ''
+  }
+
+  function rewriteModeLabel(mode) {
+    const labels = {
+      deepseek: 'AI 深度改写',
+      offline_star: 'STAR 成稿参考',
+      offline: '规则成稿参考',
+    }
+    return labels[mode] || '规则成稿参考'
   }
 
   function resolvedSourceResumeUrl(record) {
@@ -398,18 +701,19 @@ function createPlatformStore(router, route) {
     jobDescription.value = profile.requirement_summary || profile.description || ''
   }
 
-  function handleJobProfileChange() {
-    applySelectedJobProfile(selectedJobProfile.value)
-  }
-
-  function syncTargetPositionFromResult(data, overwrite = false) {
-    const nextTargetPosition = data?.target_position?.trim()
-    if (!nextTargetPosition) {
+  function setSelectedJobProfileKey(key) {
+    const nextKey = String(key || '0')
+    selectedJobProfileKey.value = nextKey
+    if (nextKey.startsWith('user:')) {
+      selectedJobProfileId.value = Number(nextKey.slice('user:'.length) || 0)
       return
     }
-    if (overwrite || !targetPosition.value.trim()) {
-      targetPosition.value = nextTargetPosition
-    }
+    selectedJobProfileId.value = 0
+  }
+
+  function handleJobProfileChange(key = selectedJobProfileKey.value) {
+    setSelectedJobProfileKey(key)
+    applySelectedJobProfile(selectedJobProfile.value)
   }
 
   async function setActiveTab(tab) {
@@ -420,9 +724,6 @@ function createPlatformStore(router, route) {
       return
     }
     error.value = ''
-    if (tab === 'single' && !targetPosition.value.trim()) {
-      syncTargetPositionFromResult(result.value, true)
-    }
     if (tab === 'result') {
       const recordId = result.value?.record_id
       if (recordId) {
@@ -503,7 +804,7 @@ function createPlatformStore(router, route) {
 
   async function loadUserProfile() {
     if (!auth.value.authenticated) {
-      userProfile.value = { school: '', major: '', grade: '', phone: '', bio: '' }
+      userProfile.value = { school: '', major: '', grade: '', class_name: '', phone: '', bio: '' }
       return
     }
     profileLoading.value = true
@@ -530,6 +831,7 @@ function createPlatformStore(router, route) {
         school: userProfile.value.school,
         major: userProfile.value.major,
         grade: userProfile.value.grade,
+        class_name: userProfile.value.class_name,
         phone: userProfile.value.phone,
         bio: userProfile.value.bio,
       })
@@ -597,7 +899,7 @@ function createPlatformStore(router, route) {
       await loadAuth()
       clearHistorySelection()
       result.value = null
-      userProfile.value = { school: '', major: '', grade: '', phone: '', bio: '' }
+      userProfile.value = { school: '', major: '', grade: '', class_name: '', phone: '', bio: '' }
       await loadHistory()
       adminStats.value = null
       adminUsers.value = []
@@ -714,13 +1016,15 @@ function createPlatformStore(router, route) {
     adminLoading.value = true
     adminMessage.value = ''
     try {
-      const [records, auditLogs, aiConfig] = await Promise.all([
+      const [records, auditLogs, aiConfig, scoreConfig] = await Promise.all([
         fetchAdminRecords(),
         fetchAdminAuditLogs(),
         fetchAdminAiConfig(),
+        fetchAdminScoreConfig(),
       ])
       adminRecords.value = records
       adminAuditLogs.value = auditLogs
+      adminScoreConfig.value = scoreConfig
       adminAiConfig.value = {
         ...adminAiConfig.value,
         ...aiConfig,
@@ -749,6 +1053,7 @@ function createPlatformStore(router, route) {
       jobProfiles.value = await fetchJobProfiles()
       if (selectedJobProfileId.value && !jobProfiles.value.some((item) => item.id === selectedJobProfileId.value)) {
         selectedJobProfileId.value = 0
+        selectedJobProfileKey.value = '0'
       }
     } catch (err) {
       jobsMessage.value = err.message || '加载岗位库失败。'
@@ -757,7 +1062,27 @@ function createPlatformStore(router, route) {
     }
   }
 
+  async function loadJobProfilePresets() {
+    try {
+      jobProfilePresets.value = await fetchJobProfilePresets()
+      if (
+        selectedJobProfileKey.value.startsWith('preset:')
+        && !jobProfilePresets.value.some((item) => `preset:${item.id}` === selectedJobProfileKey.value)
+      ) {
+        setSelectedJobProfileKey('0')
+      }
+    } catch (err) {
+      jobProfilePresets.value = []
+      jobsMessage.value = err.message || '加载系统岗位模板失败。'
+    }
+  }
+
+  async function loadJobProfileCatalog() {
+    await Promise.all([loadJobProfiles(), loadJobProfilePresets()])
+  }
+
   async function loadTasks() {
+    tasksLoading.value = true
     try {
       const data = await fetchTasks()
       tasks.value = data.tasks || []
@@ -766,6 +1091,8 @@ function createPlatformStore(router, route) {
       tasks.value = []
       taskSummary.value = { pending: 0, processing: 0, paused: 0, success: 0, failed: 0, partial_success: 0 }
       error.value = err.message || '加载任务列表失败。'
+    } finally {
+      tasksLoading.value = false
     }
   }
 
@@ -821,6 +1148,9 @@ function createPlatformStore(router, route) {
   async function loadHealthStatus() {
     try {
       healthStatus.value = await fetchHealth()
+      if (error.value && isBackendUnavailableText(error.value)) {
+        error.value = ''
+      }
     } catch {
       healthStatus.value = { status: 'error', database: 'error' }
     }
@@ -843,7 +1173,7 @@ function createPlatformStore(router, route) {
         : await createJobProfile(payload)
       jobsMessage.value = editingJobProfileId.value ? '岗位模板已更新。' : '岗位模板已创建。'
       await loadJobProfiles()
-      selectedJobProfileId.value = profile.id
+      setSelectedJobProfileKey(`user:${profile.id}`)
       applySelectedJobProfile(profile)
       resetJobProfileForm()
     } catch (err) {
@@ -851,6 +1181,36 @@ function createPlatformStore(router, route) {
     } finally {
       jobsLoading.value = false
     }
+  }
+
+  async function savePresetToMyProfiles(preset) {
+    if (!preset?.id) {
+      return
+    }
+    jobsLoading.value = true
+    jobsMessage.value = ''
+    try {
+      const payload = await copyJobProfilePreset(preset.id)
+      const profile = payload.profile
+      await loadJobProfiles()
+      if (profile?.id) {
+        setSelectedJobProfileKey(`user:${profile.id}`)
+        applySelectedJobProfile(profile)
+      }
+      jobsMessage.value = payload.created ? '系统模板已保存到我的岗位库。' : '我的岗位库中已有该模板，已为你选中。'
+    } catch (err) {
+      jobsMessage.value = err.message || '保存系统模板失败。'
+    } finally {
+      jobsLoading.value = false
+    }
+  }
+
+  async function usePresetForAnalysis(preset) {
+    if (!preset?.id) {
+      return
+    }
+    handleJobProfileChange(`preset:${preset.id}`)
+    await navigateToRoute(tabRouteMap.single)
   }
 
   function editJobProfile(profile) {
@@ -867,6 +1227,7 @@ function createPlatformStore(router, route) {
       await deleteJobProfile(profile.id)
       if (selectedJobProfileId.value === profile.id) {
         selectedJobProfileId.value = 0
+        selectedJobProfileKey.value = '0'
       }
       if (editingJobProfileId.value === profile.id) {
         resetJobProfileForm()
@@ -956,6 +1317,37 @@ function createPlatformStore(router, route) {
     }
   }
 
+  async function saveScoreConfig() {
+    adminLoading.value = true
+    adminMessage.value = ''
+    try {
+      const saved = await saveAdminScoreConfig({
+        active_template: adminScoreConfig.value.active_template,
+      })
+      adminScoreConfig.value = { ...adminScoreConfig.value, ...saved }
+      adminMessage.value = '评分权重模板已更新。'
+    } catch (err) {
+      adminMessage.value = err.message || '保存评分配置失败。'
+    } finally {
+      adminLoading.value = false
+    }
+  }
+
+  async function cleanupStorage(dryRun = false) {
+    adminLoading.value = true
+    adminMessage.value = ''
+    try {
+      const result = await cleanupAdminStorage({ dry_run: dryRun })
+      adminMessage.value = dryRun
+        ? `扫描 ${result.scanned} 个文件，预计可清理 ${result.removed} 个孤儿文件。`
+        : `已清理 ${result.removed} 个无引用文件。`
+    } catch (err) {
+      adminMessage.value = err.message || '文件清理失败。'
+    } finally {
+      adminLoading.value = false
+    }
+  }
+
   async function saveAiConfig() {
     adminLoading.value = true
     adminMessage.value = ''
@@ -997,6 +1389,82 @@ function createPlatformStore(router, route) {
     }
   }
 
+  function stopSinglePolling() {
+    if (singlePollingId.value) {
+      window.clearInterval(singlePollingId.value)
+      singlePollingId.value = null
+    }
+    if (analysisPhaseTimer.value) {
+      window.clearInterval(analysisPhaseTimer.value)
+      analysisPhaseTimer.value = null
+    }
+    analysisPhase.value = 0
+  }
+
+  function startAnalysisPhaseTimer() {
+    analysisPhase.value = 0
+    if (analysisPhaseTimer.value) {
+      window.clearInterval(analysisPhaseTimer.value)
+    }
+    analysisPhaseTimer.value = window.setInterval(() => {
+      analysisPhase.value = Math.min(analysisPhase.value + 1, ANALYSIS_PHASES.length - 1)
+    }, 2800)
+  }
+
+  function analysisPhaseLabel() {
+    return ANALYSIS_PHASES[analysisPhase.value] || ANALYSIS_PHASES[0]
+  }
+
+  async function copyText(text) {
+    const value = String(text || '').trim()
+    if (!value) {
+      return false
+    }
+    try {
+      await navigator.clipboard.writeText(value)
+      return true
+    } catch {
+      return false
+    }
+  }
+
+  function recordStatusDone(status) {
+    return !['processing', 'pending'].includes(status)
+  }
+
+  function aiEnhancementPending(payload = result.value) {
+    return shouldShowAiWorking(payload)
+  }
+
+  function startSinglePolling(recordId) {
+    stopSinglePolling()
+    startAnalysisPhaseTimer()
+    singlePollingId.value = window.setInterval(async () => {
+      try {
+        const status = await fetchHistoryStatus(recordId)
+        if (!recordStatusDone(status.status)) {
+          if (result.value) {
+            result.value = { ...result.value, ...status, status: status.status || 'processing' }
+          }
+          return
+        }
+        const detail = await fetchHistoryDetail(recordId)
+        result.value = detail
+        detailLoading.value = false
+        detailError.value = ''
+        await Promise.all([loadRecordVersions(recordId), loadHistory(), loadTasks()])
+        if (aiEnhancementPending(detail)) {
+          return
+        }
+        stopSinglePolling()
+      } catch (err) {
+        stopSinglePolling()
+        detailLoading.value = false
+        detailError.value = err.message || '分析任务刷新失败。'
+      }
+    }, 1500)
+  }
+
   function batchStatusDone(status) {
     return ['success', 'partial_success', 'failed', 'paused'].includes(status)
   }
@@ -1016,11 +1484,14 @@ function createPlatformStore(router, route) {
 
   async function refreshBatchTask(batchTaskId, quiet = false) {
     try {
-      batchResult.value = await fetchBatchTask(batchTaskId)
+      const includeResults = !quiet
+      batchResult.value = await fetchBatchTask(batchTaskId, { includeResults })
       if (batchStatusDone(batchResult.value.status)) {
         stopBatchPolling()
-        await loadHistory()
-        await loadTasks()
+        if (!includeResults) {
+          batchResult.value = await fetchBatchTask(batchTaskId, { includeResults: true })
+        }
+        await Promise.all([loadHistory(), loadTasks()])
       }
     } catch (err) {
       if (!quiet) {
@@ -1032,6 +1503,9 @@ function createPlatformStore(router, route) {
   function startBatchPolling(batchTaskId) {
     stopBatchPolling()
     batchPollingId.value = window.setInterval(() => {
+      if (document.hidden || !['batch', 'tasks'].includes(activeTab.value)) {
+        return
+      }
       refreshBatchTask(batchTaskId, true)
     }, 3000)
   }
@@ -1059,13 +1533,48 @@ function createPlatformStore(router, route) {
     })
   }
 
+  function taskCanRetry(task) {
+    if (!task) {
+      return false
+    }
+    if (task.task_type === 'batch_analysis') {
+      return ['failed', 'partial_success', 'paused'].includes(task.status)
+    }
+    return task.status === 'failed' && Boolean(task.record_id)
+  }
+
+  async function retryTask(task, event) {
+    event?.stopPropagation?.()
+    if (!taskCanRetry(task)) {
+      return
+    }
+    await runTask(async () => {
+      if (task.task_type === 'batch_analysis' && task.batch_task_id) {
+        batchResult.value = await retryBatchTask(task.batch_task_id)
+        if (!batchStatusDone(batchResult.value.status)) {
+          startBatchPolling(task.batch_task_id)
+        }
+      } else if (task.record_id) {
+        await retryHistoryAnalysis(task.record_id)
+      }
+      await loadTasks()
+    })
+  }
+
+  function clearError() {
+    error.value = ''
+  }
+
   async function submitSingle() {
+    if (loading.value) {
+      return
+    }
     if (!singleFile.value) {
       error.value = '请选择 .docx 或 .pdf 文件。'
       return
     }
     await runTask(async () => {
-      result.value = await analyzeResume({
+      const payload = await analyzeResume({
         file: singleFile.value,
         targetPosition: targetPosition.value,
         jobDescription: jobDescription.value,
@@ -1073,11 +1582,81 @@ function createPlatformStore(router, route) {
         enableAi: enableAi.value,
         parentRecordId: parentRecordId.value > 0 ? parentRecordId.value : undefined,
       })
-      syncTargetPositionFromResult(result.value)
+      const wasNewVersion = parentRecordId.value > 0
+      const usedJobProfile = selectedJobProfileId.value > 0
       clearNewVersion()
+      if (!wasNewVersion && !usedJobProfile) {
+        targetPosition.value = ''
+        jobDescription.value = ''
+      }
+      singleFile.value = null
       await loadHistory()
-      await navigateToRoute({ name: 'workspace-resume-detail', params: { recordId: String(result.value.record_id) } })
+      await loadTasks()
+      await navigateToRoute({ name: 'workspace-resume-detail', params: { recordId: String(payload.record_id) } })
+      if (payload.status === 'processing') {
+        result.value = payload
+        detailLoading.value = true
+        startSinglePolling(payload.record_id)
+      } else {
+        result.value = payload
+      }
     })
+  }
+
+  async function retryFailedRecord(record) {
+    if (!record?.record_id) {
+      return
+    }
+    await runTask(async () => {
+      const payload = await retryHistoryAnalysis(record.record_id)
+      await loadHistory()
+      await loadTasks()
+      result.value = payload
+      detailLoading.value = true
+      startSinglePolling(record.record_id)
+    })
+  }
+
+  async function refreshInterviewPrepForRecord(enableAi = false) {
+    if (!result.value?.record_id || result.value.status !== 'success') {
+      return
+    }
+    interviewPrepLoading.value = true
+    try {
+      const payload = await refreshInterviewPrep(result.value.record_id, enableAi)
+      if (result.value) {
+        result.value = {
+          ...result.value,
+          interview_prep: payload.interview_prep || payload,
+          mock_interview: payload.mock_interview || result.value.mock_interview,
+        }
+      }
+    } catch (err) {
+      error.value = err.message || '面试题生成失败。'
+    } finally {
+      interviewPrepLoading.value = false
+    }
+  }
+
+  async function refreshRewritePreviewForRecord(enableAi = false) {
+    if (!result.value?.record_id || result.value.status !== 'success') {
+      return
+    }
+    rewritePreviewLoading.value = true
+    try {
+      const payload = await refreshRewritePreview(result.value.record_id, enableAi)
+      if (result.value && payload.rewrite_preview) {
+        result.value = {
+          ...result.value,
+          rewrite_preview: payload.rewrite_preview,
+          template_recommendations: payload.template_recommendations || result.value.template_recommendations,
+        }
+      }
+    } catch (err) {
+      error.value = err.message || '深度改写生成失败。'
+    } finally {
+      rewritePreviewLoading.value = false
+    }
   }
 
   async function startNewVersion(record) {
@@ -1096,11 +1675,16 @@ function createPlatformStore(router, route) {
     parentRecordLabel.value = `${source.filename || '简历'} · v${source.version_no || 1}`
     targetPosition.value = source.target_position || ''
     jobDescription.value = source.job_description || ''
-    selectedJobProfileId.value = source.job_profile?.id || 0
-    if (source.job_profile) {
+    if (source.job_profile?.id) {
+      setSelectedJobProfileKey(`user:${source.job_profile.id}`)
       applySelectedJobProfile(source.job_profile)
+    } else {
+      setSelectedJobProfileKey('0')
     }
-    await setActiveTab('single')
+    await navigateToRoute({
+      name: 'workspace-analyze',
+      query: { parentRecordId: String(source.record_id) },
+    })
   }
 
   function clearNewVersion() {
@@ -1109,6 +1693,9 @@ function createPlatformStore(router, route) {
   }
 
   async function submitZip() {
+    if (loading.value) {
+      return
+    }
     if (batchTaskRunning.value) {
       error.value = '当前已有批量任务正在处理中，请等待本次任务完成后再提交新的 ZIP。'
       return
@@ -1125,6 +1712,9 @@ function createPlatformStore(router, route) {
         jobProfileId: selectedJobProfileId.value,
         enableAi: enableAi.value,
       })
+      if (batchResult.value.reused) {
+        error.value = '已有批量任务正在处理，已恢复显示当前任务进度。'
+      }
       if (!batchStatusDone(batchResult.value.status)) {
         startBatchPolling(batchResult.value.batch_task_id)
       }
@@ -1145,14 +1735,47 @@ function createPlatformStore(router, route) {
   }
 
   async function loadHistory() {
+    historyLoading.value = true
     try {
-      history.value = await fetchHistory()
+      history.value = await fetchHistory({ includeTotal: false })
       const validIds = new Set(history.value.map((record) => record.record_id))
       selectedRecordIds.value = selectedRecordIds.value.filter((recordId) => validIds.has(recordId))
     } catch (err) {
       history.value = []
       clearHistorySelection()
       error.value = err.message || '加载简历历史失败。'
+    } finally {
+      historyLoading.value = false
+    }
+  }
+
+  async function loadTeacherRecords() {
+    if (!isTeacherOrAdmin.value) {
+      return
+    }
+    teacherRecordsLoading.value = true
+    try {
+      const data = await fetchTeacherRecords()
+      teacherRecords.value = data.items || []
+    } catch (err) {
+      teacherMessage.value = err.message || '加载学生记录失败。'
+    } finally {
+      teacherRecordsLoading.value = false
+    }
+  }
+
+  async function loadTeacherClassData() {
+    if (!isTeacherOrAdmin.value) {
+      return
+    }
+    teacherClassLoading.value = true
+    teacherMessage.value = ''
+    try {
+      teacherClassPanel.value = await fetchTeacherClasses()
+    } catch (err) {
+      teacherMessage.value = err.message || '加载班级数据失败。'
+    } finally {
+      teacherClassLoading.value = false
     }
   }
 
@@ -1216,11 +1839,19 @@ function createPlatformStore(router, route) {
 
   async function openRecordById(recordId) {
     detailLoading.value = true
-    result.value = null
-    error.value = ''
+    detailError.value = ''
+    stopSinglePolling()
     try {
-      result.value = await fetchHistoryDetail(recordId)
-      syncTargetPositionFromResult(result.value, true)
+      const detail = await fetchHistoryDetail(recordId)
+      if (detail.status === 'processing') {
+        result.value = detail
+        startSinglePolling(recordId)
+        if (route.name !== 'workspace-resume-detail') {
+          await navigateToRoute({ name: 'workspace-resume-detail', params: { recordId: String(recordId) } })
+        }
+        return
+      }
+      result.value = detail
       await loadRecordVersions(recordId)
       if (route.name !== 'workspace-resume-detail') {
         await navigateToRoute({ name: 'workspace-resume-detail', params: { recordId: String(recordId) } })
@@ -1228,9 +1859,11 @@ function createPlatformStore(router, route) {
     } catch (err) {
       result.value = null
       recordVersions.value = []
-      error.value = err.message || '加载简历详情失败。'
+      detailError.value = err.message || '加载简历详情失败。'
     } finally {
-      detailLoading.value = false
+      if (!singlePollingId.value) {
+        detailLoading.value = false
+      }
     }
   }
 
@@ -1309,9 +1942,6 @@ function createPlatformStore(router, route) {
       await closeAuthPanel(false)
     }
 
-    if (nextTab === 'single' && !targetPosition.value.trim()) {
-      syncTargetPositionFromResult(result.value, true)
-    }
     if (nextTab === 'single' && route.query.parentRecordId) {
       const parentId = Number(route.query.parentRecordId || 0)
       if (parentId > 0 && parentId !== parentRecordId.value) {
@@ -1324,11 +1954,20 @@ function createPlatformStore(router, route) {
     if (nextTab !== 'single' && parentRecordId.value) {
       clearNewVersion()
     }
+    if (nextTab === 'dashboard' && auth.value.authenticated) {
+      await loadUserProfile()
+    }
     if (nextTab === 'jobs') {
-      await loadJobProfiles()
+      await loadJobProfileCatalog()
+    }
+    if (nextTab === 'single' || nextTab === 'batch') {
+      await loadJobProfileCatalog()
     }
     if (nextTab === 'tasks') {
       await loadTasks()
+    }
+    if (nextTab === 'interview') {
+      await loadHistory()
     }
     if (nextTab === 'reports') {
       await loadReports()
@@ -1345,6 +1984,12 @@ function createPlatformStore(router, route) {
     if (nextTab === 'teacher-dashboard') {
       await loadTeacherData()
     }
+    if (nextTab === 'teacher-classes') {
+      await loadTeacherClassData()
+    }
+    if (nextTab === 'teacher-records') {
+      await loadTeacherRecords()
+    }
     if (route.name === 'workspace-resume-detail') {
       const recordId = Number(route.params.recordId || 0)
       if (recordId && recordId !== Number(result.value?.record_id || 0)) {
@@ -1355,7 +2000,17 @@ function createPlatformStore(router, route) {
 
   let stopWatchers = null
 
+  let routeGuardsInstalled = false
+
   function initPlatform() {
+    if (!routeGuardsInstalled) {
+      installRouteGuards(usePlatform)
+      routeGuardsInstalled = true
+    }
+    setUnauthorizedHandler(() => {
+      void openAuthPanel('login', false)
+    })
+
     watch(enableAi, (value) => {
       localStorage.setItem('enableAi', String(value))
     })
@@ -1373,7 +2028,8 @@ function createPlatformStore(router, route) {
 
     void (async () => {
       await loadAuth()
-      await Promise.all([loadHistory(), loadJobProfiles(), loadTasks(), loadReports()])
+      await loadHistory()
+      await loadHealthStatus()
       await restoreActiveBatch()
       await syncRouteState()
     })()
@@ -1381,6 +2037,7 @@ function createPlatformStore(router, route) {
 
   function destroyPlatform() {
     stopBatchPolling()
+    stopSinglePolling()
     if (stopWatchers) {
       stopWatchers()
       stopWatchers = null
@@ -1396,18 +2053,28 @@ function createPlatformStore(router, route) {
     enableAi,
     loading,
     detailLoading,
+    analysisPhase,
+    analysisPhaseLabel,
+    copyText,
+    interviewPrepLoading,
+    rewritePreviewLoading,
+    detailError,
     error,
     healthStatus,
     result,
     batchResult,
     history,
+    historyLoading,
     tasks,
+    tasksLoading,
     taskSummary,
     reports,
     jobProfiles,
+    jobProfilePresets,
     jobsLoading,
     jobsMessage,
     selectedJobProfileId,
+    selectedJobProfileKey,
     editingJobProfileId,
     jobProfileForm,
     selectedRecordIds,
@@ -1429,8 +2096,13 @@ function createPlatformStore(router, route) {
     adminLoading,
     adminMessage,
     adminAiConfig,
+    adminScoreConfig,
     teacherStats,
+    teacherClassPanel,
+    teacherRecords,
     teacherLoading,
+    teacherClassLoading,
+    teacherRecordsLoading,
     teacherMessage,
     recordVersions,
     versionCompare,
@@ -1460,10 +2132,13 @@ function createPlatformStore(router, route) {
     allowRegister,
     selectedJobProfile,
     jobProfileOptions,
+    jobProfilePresetOptions,
     dashboardCards,
     latestTaskState,
     latestResumeRecord,
+    showBackButton,
     setActiveTab,
+    goBack,
     openAuthPanel,
     closeAuthPanel,
     openSettingsPanel,
@@ -1480,6 +2155,8 @@ function createPlatformStore(router, route) {
     loadUserProfile,
     submitUserProfile,
     loadJobProfiles,
+    loadJobProfilePresets,
+    loadJobProfileCatalog,
     loadTasks,
     loadReports,
     loadHistory,
@@ -1488,8 +2165,12 @@ function createPlatformStore(router, route) {
     loadAdminSystemData,
     loadAdminData,
     loadTeacherData,
+    loadTeacherClassData,
+    loadTeacherRecords,
     distributionWidth,
     submitJobProfile,
+    savePresetToMyProfiles,
+    usePresetForAnalysis,
     editJobProfile,
     removeJobProfile,
     handleJobProfileChange,
@@ -1501,11 +2182,28 @@ function createPlatformStore(router, route) {
     resetUserPassword,
     removeAdminRecord,
     saveAiConfig,
+    saveScoreConfig,
+    cleanupStorage,
     formatDateTime,
     analysisModeLabel,
+    displayAnalysisModeLabel,
+    displayAnalysisModeClass,
     targetSourceLabel,
     parseQualityLabel,
     parseQualityTone,
+    sectionLabel,
+    confidenceLabel,
+    buildReportSummary,
+    scoreGradeLabel,
+    scoreGradeTone,
+    matchRatePercent,
+    priorityLabel,
+    buildActionRoadmapFallback,
+    batchItemStatusLabel,
+    batchItemStatusTone,
+    scoreReliabilityLabel,
+    aiEnhancementPending,
+    rewriteModeLabel,
     resolvedSourceResumeUrl,
     batchStatusTone,
     submitSingle,
@@ -1514,6 +2212,12 @@ function createPlatformStore(router, route) {
     submitZip,
     pauseCurrentBatchTask,
     retryCurrentBatchTask,
+    retryFailedRecord,
+    retryTask,
+    taskCanRetry,
+    clearError,
+    refreshInterviewPrepForRecord,
+    refreshRewritePreviewForRecord,
     refreshBatchTask,
     openTask,
     openBatchResultRecord,

@@ -1,3 +1,7 @@
+from contextlib import asynccontextmanager
+import logging
+import time
+
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
@@ -7,6 +11,24 @@ from app.api.routes import router
 from app.core.config import settings
 from app.core.database import init_db
 from app.services.auth import parse_session_token
+
+logger = logging.getLogger("resume_ai.access")
+
+
+class RequestLoggingMiddleware(BaseHTTPMiddleware):
+    async def dispatch(self, request: Request, call_next):
+        start = time.perf_counter()
+        response = await call_next(request)
+        elapsed_ms = (time.perf_counter() - start) * 1000
+        if not request.url.path.endswith("/health"):
+            logger.info(
+                "%s %s -> %s (%.1fms)",
+                request.method,
+                request.url.path,
+                response.status_code,
+                elapsed_ms,
+            )
+        return response
 
 
 class GuestSessionMiddleware(BaseHTTPMiddleware):
@@ -40,7 +62,18 @@ class GuestSessionMiddleware(BaseHTTPMiddleware):
         return response
 
 
-app = FastAPI(title="简历评价智能体", description="高校学生求职简历分析与优化平台", version="0.3.0")
+@asynccontextmanager
+async def lifespan(_app: FastAPI):
+    init_db()
+    yield
+
+
+app = FastAPI(
+    title="简历评价智能体",
+    description="高校学生求职简历分析与优化平台",
+    version="0.3.0",
+    lifespan=lifespan,
+)
 
 
 @app.exception_handler(PermissionError)
@@ -60,11 +93,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 app.add_middleware(GuestSessionMiddleware)
+app.add_middleware(RequestLoggingMiddleware)
 
 settings.ensure_directories()
 app.include_router(router, prefix="/api")
-
-
-@app.on_event("startup")
-def on_startup() -> None:
-    init_db()

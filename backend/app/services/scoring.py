@@ -4,7 +4,7 @@ from typing import Any
 
 from app.services.match_engine import match_job
 from app.services.score_engine import JOB_PROFILES, WEIGHTS, build_evidence, label_for_score, score_resume
-from app.services.suggestion_engine import build_diagnosis, build_suggestions
+from app.services.suggestion_engine import build_diagnosis, build_structured_suggestions, build_suggestions
 
 __all__ = [
     "analyze_resume",
@@ -19,10 +19,14 @@ __all__ = [
 
 
 def analyze_resume(parsed: dict[str, Any], target_position: str = "", job_description: str = "") -> dict[str, Any]:
+    from app.services.pipeline_utils import normalize_sections
+
+    sections = normalize_sections(parsed.get("sections", {}))
+    parsed = {**parsed, "sections": sections}
     scored = score_resume(parsed, target_position, job_description)
     diagnosis = build_diagnosis(
         scored["scores"],
-        parsed.get("sections", {}),
+        sections,
         scored["match_result"],
         scored["parse_warnings"],
         scored["parse_quality"],
@@ -30,13 +34,22 @@ def analyze_resume(parsed: dict[str, Any], target_position: str = "", job_descri
     )
     suggestions = build_suggestions(
         scored["scores"],
-        parsed.get("sections", {}),
+        sections,
+        scored["match_result"],
+        scored["parse_quality"],
+        scored["evidence"],
+    )
+    structured_suggestions = build_structured_suggestions(
+        scored["scores"],
+        sections,
         scored["match_result"],
         scored["parse_quality"],
         scored["evidence"],
     )
     return {
         **scored,
+        "sections": sections,
         "diagnosis": diagnosis,
         "suggestions": suggestions,
+        "structured_suggestions": structured_suggestions,
     }

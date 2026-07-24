@@ -1,6 +1,6 @@
 @echo off
 setlocal EnableExtensions
-cd /d %~dp0
+cd /d "%~dp0"
 
 set "PYTHON_CMD="
 for %%V in (3.12 3.11 3.10) do (
@@ -11,23 +11,43 @@ for %%V in (3.12 3.11 3.10) do (
 )
 
 if not defined PYTHON_CMD (
-  echo [ERROR] 需要 Python 3.10 / 3.11 / 3.12 才能运行测试。
+  echo [ERROR] Python 3.10 / 3.11 / 3.12 is required.
+  pause
   exit /b 1
 )
 
-cd backend
-if not exist .venv (
-  echo [INFO] 未找到 .venv，请先运行 start_backend.bat 或手动创建虚拟环境。
+cd /d "%~dp0backend"
+
+if not exist ".venv\Scripts\python.exe" (
+  echo [INFO] .venv not found. Creating virtual environment...
   %PYTHON_CMD% -m venv .venv
-  call .venv\Scripts\activate
+  if errorlevel 1 goto :fail
+  call ".venv\Scripts\activate.bat"
   python -m pip install --upgrade pip
+  if errorlevel 1 goto :fail
   pip install -r requirements.txt
+  if errorlevel 1 goto :fail
 ) else (
-  call .venv\Scripts\activate
+  call ".venv\Scripts\activate.bat"
 )
 
 set DATABASE_URL=sqlite:///:memory:
 set SESSION_SECRET=ci-test-secret
 set ALLOW_REGISTER=true
+
 python -m pytest tests/ -q
-exit /b %ERRORLEVEL%
+set "RC=%ERRORLEVEL%"
+echo.
+if not "%RC%"=="0" (
+  echo [FAILED] pytest exit code %RC%
+) else (
+  echo [OK] All tests passed.
+)
+pause
+exit /b %RC%
+
+:fail
+echo.
+echo [ERROR] Test setup failed.
+pause
+exit /b 1

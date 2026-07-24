@@ -80,7 +80,7 @@ const platform = usePlatform()
         <div class="avatar">{{ platform.currentIdentityLabel.slice(0, 1) }}</div>
         <strong>{{ platform.currentIdentityLabel }}</strong>
         <span>{{ platform.auth.user?.username }}</span>
-        <span>{{ platform.isAdmin ? '管理员账号' : '普通用户账号' }}</span>
+        <span>{{ platform.isAdmin ? '管理员账号' : platform.roleLabel(platform.auth.user?.role) }}账号</span>
         <button class="secondary-action" type="button" :disabled="platform.authLoading" @click="platform.logout">
           <LogOut :size="16" />退出登录
         </button>

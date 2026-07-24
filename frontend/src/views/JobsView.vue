@@ -1,13 +1,70 @@
 <script setup>
-import { BriefcaseBusiness, RefreshCw, Trash2 } from 'lucide-vue-next'
+import { computed, ref } from 'vue'
+import { BriefcaseBusiness, RefreshCw, Sparkles, Trash2 } from 'lucide-vue-next'
 
 import { usePlatform } from '../stores/platform'
 
 const platform = usePlatform()
+const selectedPresetCategory = ref('全部')
+
+const presetCategories = computed(() => [
+  '全部',
+  ...Array.from(new Set(platform.jobProfilePresets.map((item) => item.category).filter(Boolean))),
+])
+const filteredPresets = computed(() => {
+  if (selectedPresetCategory.value === '全部') {
+    return platform.jobProfilePresets
+  }
+  return platform.jobProfilePresets.filter((item) => item.category === selectedPresetCategory.value)
+})
 </script>
 
 <template>
-  <section class="analysis-layout">
+  <section class="jobs-stack">
+    <section class="panel preset-library-panel">
+      <div class="panel-heading">
+        <div>
+          <h3>推荐岗位模板</h3>
+          <p class="panel-subtitle">系统内置常见校招/实习岗位，可直接套用分析，也可保存到自己的岗位库继续编辑。</p>
+        </div>
+        <button class="secondary-action" :disabled="platform.jobsLoading" @click="platform.loadJobProfileCatalog">
+          <RefreshCw :size="16" />刷新
+        </button>
+      </div>
+      <div class="preset-filter-row">
+        <button
+          v-for="category in presetCategories"
+          :key="category"
+          type="button"
+          class="preset-filter"
+          :class="{ active: selectedPresetCategory === category }"
+          @click="selectedPresetCategory = category"
+        >
+          {{ category }}
+        </button>
+      </div>
+      <div v-if="filteredPresets.length" class="preset-card-grid">
+        <article v-for="preset in filteredPresets" :key="preset.id" class="preset-card">
+          <div class="preset-card-head">
+            <span class="mode-tag ai">{{ preset.category }}</span>
+            <strong>{{ preset.name }}</strong>
+            <small>{{ preset.target_position }}</small>
+          </div>
+          <p>{{ preset.requirement_summary }}</p>
+          <div class="preset-card-actions">
+            <button type="button" class="secondary-action" @click="platform.usePresetForAnalysis(preset)">
+              <Sparkles :size="16" />套用分析
+            </button>
+            <button type="button" class="secondary-action" :disabled="platform.jobsLoading" @click="platform.savePresetToMyProfiles(preset)">
+              <BriefcaseBusiness :size="16" />保存到我的岗位库
+            </button>
+          </div>
+        </article>
+      </div>
+      <div v-else class="empty-inline">暂无系统岗位模板。</div>
+    </section>
+
+    <section class="analysis-layout">
     <form class="panel form-panel" @submit.prevent="platform.submitJobProfile">
       <div class="panel-heading">
         <div>
@@ -87,7 +144,7 @@ const platform = usePlatform()
               <td><span class="mode-tag" :class="profile.status === 'active' ? 'success' : 'warning'">{{ profile.status === 'active' ? '启用' : '草稿' }}</span></td>
               <td>{{ platform.formatDateTime(profile.updated_at) }}</td>
               <td class="row-actions">
-                <button @click="platform.selectedJobProfileId = profile.id; platform.applySelectedJobProfile(profile)">套用</button>
+                <button @click="platform.handleJobProfileChange(`user:${profile.id}`)">套用</button>
                 <button @click="platform.editJobProfile(profile)">编辑</button>
                 <button class="danger" @click="platform.removeJobProfile(profile)"><Trash2 :size="15" />归档</button>
               </td>
@@ -97,5 +154,6 @@ const platform = usePlatform()
       </div>
       <div v-else class="empty-inline">还没有岗位模板。先保存一条常用 JD，后续分析就能直接复用。</div>
     </section>
+  </section>
   </section>
 </template>

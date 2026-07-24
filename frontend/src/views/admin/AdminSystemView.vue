@@ -47,7 +47,7 @@ const platform = usePlatform()
       </label>
       <label class="switch-row">
         <input v-model="platform.adminAiConfig.clear_api_key" type="checkbox" />
-        <span>清空当前 API Key，回退到离线规则分析</span>
+        <span>清空当前 API Key，仅保留快速本地分析</span>
       </label>
       <dl class="kv-list">
         <div><dt>当前 Key</dt><dd>{{ platform.adminAiConfig.api_key_masked || '未配置' }}</dd></div>
@@ -79,7 +79,7 @@ const platform = usePlatform()
               <td>{{ record.display_name }}<br /><span class="muted-cell">{{ record.username }}</span></td>
               <td>{{ record.target_position || '-' }}</td>
               <td><strong>{{ record.total_score }}</strong></td>
-              <td><span class="mode-tag" :class="record.analysis_mode">{{ record.analysis_mode_label || platform.analysisModeLabel(record.analysis_mode) }}</span></td>
+              <td><span class="mode-tag" :class="platform.displayAnalysisModeClass(record)">{{ platform.displayAnalysisModeLabel(record) }}</span></td>
               <td>{{ platform.formatDateTime(record.created_at) }}</td>
               <td class="row-actions">
                 <button class="danger" :disabled="platform.adminLoading" @click="platform.removeAdminRecord(record)">
@@ -92,6 +92,43 @@ const platform = usePlatform()
             </tr>
           </tbody>
         </table>
+      </div>
+    </section>
+
+    <section class="panel">
+      <div class="panel-heading">
+        <div>
+          <h3>评分权重模板</h3>
+          <p class="panel-subtitle">按岗位类型切换评分维度权重（阶段二能力）。</p>
+        </div>
+        <button class="secondary-action" :disabled="platform.adminLoading" @click="platform.saveScoreConfig">
+          保存模板
+        </button>
+      </div>
+      <label class="field">
+        <span>当前生效模板</span>
+        <select v-model="platform.adminScoreConfig.active_template">
+          <option v-for="name in platform.adminScoreConfig.available_templates" :key="name" :value="name">
+            {{ name }}
+          </option>
+        </select>
+      </label>
+    </section>
+
+    <section class="panel">
+      <div class="panel-heading">
+        <div>
+          <h3>文件生命周期</h3>
+          <p class="panel-subtitle">清理 uploads / reports 中无数据库引用的孤儿文件。</p>
+        </div>
+        <div class="panel-actions">
+          <button class="secondary-action" :disabled="platform.adminLoading" @click="platform.cleanupStorage(true)">
+            扫描预览
+          </button>
+          <button class="secondary-action danger-action" :disabled="platform.adminLoading" @click="platform.cleanupStorage(false)">
+            <Trash2 :size="16" />执行清理
+          </button>
+        </div>
       </div>
     </section>
 

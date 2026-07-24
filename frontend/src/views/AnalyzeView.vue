@@ -1,6 +1,7 @@
 <script setup>
 import { UploadCloud } from 'lucide-vue-next'
 
+import JobProfileFields from '../components/JobProfileFields.vue'
 import { usePlatform } from '../stores/platform'
 
 const platform = usePlatform()
@@ -29,34 +30,23 @@ const platform = usePlatform()
         <span>支持 Word / PDF 格式，文件安全存储于本地</span>
       </label>
 
-      <div class="form-grid">
-        <label class="field">
-          <span>岗位模板</span>
-          <select v-model.number="platform.selectedJobProfileId" @change="platform.handleJobProfileChange">
-            <option :value="0">不使用模板，手动填写</option>
-            <option v-for="profile in platform.jobProfileOptions" :key="profile.id" :value="profile.id">
-              {{ profile.optionLabel }}
-            </option>
-          </select>
-        </label>
-
-        <label class="field">
-          <span>目标岗位</span>
-          <input v-model="platform.targetPosition" placeholder="例如：数据分析师、产品经理、运营实习生" />
-        </label>
-
-        <label class="field">
-          <span>岗位 JD</span>
-          <textarea v-model="platform.jobDescription" rows="9" placeholder="粘贴岗位要求，用于计算岗位匹配度。"></textarea>
-        </label>
-      </div>
+      <JobProfileFields
+        :model-value="platform.selectedJobProfileKey"
+        :target-position="platform.targetPosition"
+        :job-description="platform.jobDescription"
+        :profiles="platform.jobProfileOptions"
+        :presets="platform.jobProfilePresetOptions"
+        @update:model-value="(value) => { platform.handleJobProfileChange(value) }"
+        @update:target-position="(value) => { platform.targetPosition = value }"
+        @update:job-description="(value) => { platform.jobDescription = value }"
+      />
 
       <div class="submit-row">
         <button class="primary-action" :disabled="platform.loading">
           <UploadCloud :size="18" />
           {{ platform.loading ? '分析中…' : platform.parentRecordId ? '分析新版本' : '开始分析' }}
         </button>
-        <span>{{ platform.enableAi ? 'AI 分析失败时自动切换规则引擎' : '当前使用规则引擎分析' }}</span>
+        <span>{{ platform.enableAi ? '约 5 秒先出基础分析，AI 优化后台补齐' : '当前使用规则引擎分析' }}</span>
       </div>
     </form>
 
@@ -66,8 +56,21 @@ const platform = usePlatform()
         <strong>您将获得</strong>
         <ul class="clean-list soft-list">
           <li>综合评分与各维度分项得分</li>
-          <li>岗位匹配度与缺失关键词</li>
-          <li>问题诊断与具体修改建议</li>
+          <li>岗位匹配度、关键词覆盖与缺失项</li>
+          <li>约 5 秒生成基础诊断、修改建议与规则改写参考</li>
+          <li>开启 AI 时，深度诊断与改写会在后台自动补齐</li>
+          <li>简历模板推荐与优化稿导出</li>
+          <li>Word / PDF 评价报告一键导出</li>
+        </ul>
+      </section>
+      <section class="compact-card single-guide-card">
+        <span class="guide-kicker">识别质量</span>
+        <strong>上传建议</strong>
+        <ul class="clean-list soft-list">
+          <li>优先使用标准 DOCX 或可选中复制的 PDF</li>
+          <li>避免纯图片/扫描版，否则识别准确率会下降</li>
+          <li>板块标题建议用「教育背景」「实习经历」等常见写法</li>
+          <li>文件名可含岗位方向，如「姓名-求职简历(平面设计).docx」</li>
         </ul>
       </section>
       <section v-if="platform.parentRecordId" class="compact-card single-guide-card">
@@ -80,14 +83,14 @@ const platform = usePlatform()
         <strong>推荐流程</strong>
         <ul class="clean-list soft-list">
           <li>先上传主简历，再填写目标岗位</li>
-          <li>重点关注缺失关键词与诊断建议</li>
+          <li>重点关注缺失关键词与诊断与优化建议</li>
           <li>确认结果后导出报告，指导修改方向</li>
         </ul>
       </section>
       <section class="compact-card single-guide-card">
         <span class="guide-kicker">隐私保护</span>
         <strong>数据安全</strong>
-        <p>简历文件仅存储在本地，删除记录时同步清理。开启 AI 分析时优先使用智能诊断，不可用时自动回退规则引擎。</p>
+        <p>简历文件仅存储在本地，删除记录时同步清理。开启 AI 时先展示基础分析，智能诊断与改写稍后自动更新。</p>
       </section>
     </aside>
   </section>

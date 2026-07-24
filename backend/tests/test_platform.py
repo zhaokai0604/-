@@ -1,32 +1,10 @@
-import os
-
 import pytest
-
-os.environ.setdefault("DATABASE_URL", "sqlite:///:memory:")
-os.environ.setdefault("SESSION_SECRET", "test-session-secret")
-os.environ.setdefault("ALLOW_REGISTER", "true")
-os.environ.setdefault("ADMIN_USERNAME", "sysadmin")
-os.environ.setdefault("ADMIN_PASSWORD", "Password1")
-
-from app.core.config import get_settings
-
-get_settings.cache_clear()
 
 from fastapi.testclient import TestClient
 
-from app.core.database import Base, SessionLocal, engine, init_db
-from app.main import app
+from app.core.database import SessionLocal
 from app.models.entities import AnalysisRecord, User
 from app.services.auth import create_session_token, hash_password
-
-
-@pytest.fixture()
-def client():
-    Base.metadata.drop_all(bind=engine)
-    init_db()
-    with TestClient(app) as test_client:
-        yield test_client
-    Base.metadata.drop_all(bind=engine)
 
 
 def _guest_cookies(session_id: str) -> dict[str, str]:
@@ -86,13 +64,13 @@ def test_guest_history_isolated_between_sessions(client: TestClient):
 
     response_a = client.get("/api/history", cookies=_guest_cookies(session_a))
     assert response_a.status_code == 200
-    assert len(response_a.json()) == 1
-    assert response_a.json()[0]["filename"] == "a.docx"
+    assert len(response_a.json()["items"]) == 1
+    assert response_a.json()["items"][0]["filename"] == "a.docx"
 
     response_b = client.get("/api/history", cookies=_guest_cookies(session_b))
     assert response_b.status_code == 200
-    assert len(response_b.json()) == 1
-    assert response_b.json()[0]["filename"] == "b.docx"
+    assert len(response_b.json()["items"]) == 1
+    assert response_b.json()["items"][0]["filename"] == "b.docx"
 
 
 def test_job_profiles_scoped_by_guest_session(client: TestClient):
@@ -117,6 +95,60 @@ def test_job_profiles_scoped_by_guest_session(client: TestClient):
     list_a = client.get("/api/job-profiles", cookies=_guest_cookies(session_a))
     assert len(list_a.json()) == 1
     assert list_a.json()[0]["name"] == "数据分析岗"
+
+
+def test_job_profile_presets_can_be_copied_to_guest_library(client: TestClient):
+    session_id = "preset-guest-a"
+    presets = client.get("/api/job-profile-presets")
+    assert presets.status_code == 200
+    assert len(presets.json()) >= 20
+    preset = presets.json()[0]
+    assert {"id", "name", "category", "target_position", "requirement_summary", "description"} <= set(preset)
+
+    copied = client.post(f"/api/job-profile-presets/{preset['id']}/copy", cookies=_guest_cookies(session_id))
+    assert copied.status_code == 200
+    assert copied.json()["created"] is True
+    assert copied.json()["profile"]["name"] == preset["name"]
+
+    profiles = client.get("/api/job-profiles", cookies=_guest_cookies(session_id))
+    assert profiles.status_code == 200
+    assert len(profiles.json()) == 1
+    assert profiles.json()[0]["target_position"] == preset["target_position"]
+
+
+def test_copying_same_job_profile_preset_is_idempotent(client: TestClient):
+    session_id = "preset-guest-duplicate"
+    preset = client.get("/api/job-profile-presets").json()[0]
+
+    first = client.post(f"/api/job-profile-presets/{preset['id']}/copy", cookies=_guest_cookies(session_id))
+    second = client.post(f"/api/job-profile-presets/{preset['id']}/copy", cookies=_guest_cookies(session_id))
+
+    assert first.status_code == 200
+    assert second.status_code == 200
+    assert first.json()["created"] is True
+    assert second.json()["created"] is False
+    assert first.json()["profile"]["id"] == second.json()["profile"]["id"]
+    profiles = client.get("/api/job-profiles", cookies=_guest_cookies(session_id))
+    assert len(profiles.json()) == 1
+
+
+def test_job_profile_preset_copy_keeps_guest_sessions_isolated(client: TestClient):
+    preset = client.get("/api/job-profile-presets").json()[0]
+
+    client.post(f"/api/job-profile-presets/{preset['id']}/copy", cookies=_guest_cookies("preset-guest-a"))
+    client.post(f"/api/job-profile-presets/{preset['id']}/copy", cookies=_guest_cookies("preset-guest-b"))
+
+    list_a = client.get("/api/job-profiles", cookies=_guest_cookies("preset-guest-a"))
+    list_b = client.get("/api/job-profiles", cookies=_guest_cookies("preset-guest-b"))
+    assert len(list_a.json()) == 1
+    assert len(list_b.json()) == 1
+    assert list_a.json()[0]["id"] != list_b.json()[0]["id"]
+
+
+def test_copying_unknown_job_profile_preset_returns_404(client: TestClient):
+    response = client.post("/api/job-profile-presets/not-found/copy", cookies=_guest_cookies("preset-guest-404"))
+
+    assert response.status_code == 404
 
 
 def test_teacher_stats_requires_role(client: TestClient):
@@ -189,12 +221,14 @@ def test_version_compare_same_root_only(client: TestClient):
         db.add(child)
         db.commit()
         db.refresh(child)
+        root_id = root.id
+        child_id = child.id
 
-    ok = client.get(f"/api/history/compare?a={root.id}&b={child.id}", cookies=user_cookies)
+    ok = client.get(f"/api/history/compare?a={root_id}&b={child_id}", cookies=user_cookies)
     assert ok.status_code == 200
     body = ok.json()
     assert body["summary"]["total_score_delta"] == 9
     assert len(body["dimension_deltas"]) >= 1
 
-    bad = client.get(f"/api/history/compare?a={root.id}&b={root.id}", cookies=user_cookies)
+    bad = client.get(f"/api/history/compare?a={root_id}&b={root_id}", cookies=user_cookies)
     assert bad.status_code == 400

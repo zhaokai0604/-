@@ -27,3 +27,17 @@ def process_batch_task_celery(
         job_profile_id,
         guest_session_id,
     )
+
+
+@celery_app.task(name="resume_ai.process_single_analysis", bind=True)
+def process_single_analysis_celery(self, record_id: int) -> None:
+    from app.api.platform import process_single_analysis
+
+    process_single_analysis(record_id)
+
+
+@celery_app.task(name="resume_ai.process_ai_enhancement", bind=True)
+def process_ai_enhancement_celery(self, record_id: int) -> None:
+    from app.api.platform import process_ai_enhancement
+
+    process_ai_enhancement(record_id)

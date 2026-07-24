@@ -1,5 +1,5 @@
 <script setup>
-import { Archive, BarChart3, CheckCircle2, ClipboardList, PauseCircle, RefreshCw, X } from 'lucide-vue-next'
+import { Archive, BarChart3, CheckCircle2, ClipboardList, PauseCircle, RefreshCw, RotateCcw, X } from 'lucide-vue-next'
 
 import { usePlatform } from '../stores/platform'
 
@@ -12,9 +12,9 @@ const platform = usePlatform()
       <div class="panel-heading">
         <div>
           <h3>任务概览</h3>
-          <p class="panel-subtitle">统一查看单份分析和批量分析任务。</p>
+          <p class="panel-subtitle">统一查看单份分析和批量分析任务，点击行可跳转详情。</p>
         </div>
-        <button class="secondary-action" @click="platform.loadTasks">
+        <button class="secondary-action" :disabled="platform.tasksLoading" @click="platform.loadTasks">
           <RefreshCw :size="16" />刷新
         </button>
       </div>
@@ -28,18 +28,23 @@ const platform = usePlatform()
       </div>
     </section>
 
-    <section class="panel">
+    <section v-if="platform.tasksLoading" class="empty-state compact">
+      <RefreshCw :size="28" class="spin-icon" />
+      <span>正在加载任务列表…</span>
+    </section>
+
+    <section v-else class="panel">
       <div class="panel-heading">
         <div>
           <h3>任务列表</h3>
-          <p class="panel-subtitle">单份分析和批量分析任务按时间倒序展示。</p>
+          <p class="panel-subtitle">失败任务可直接重试，无需进入详情页。</p>
         </div>
       </div>
       <div class="table-wrap">
         <table class="data-table">
           <thead>
             <tr>
-              <th>类型</th><th>文件</th><th>岗位</th><th>状态</th><th>进度</th><th>时间</th>
+              <th>类型</th><th>文件</th><th>岗位</th><th>状态</th><th>进度</th><th>时间</th><th class="actions-col">操作</th>
             </tr>
           </thead>
           <tbody>
@@ -61,9 +66,20 @@ const platform = usePlatform()
                 <span v-else>{{ task.total_score ?? '-' }}</span>
               </td>
               <td>{{ platform.formatDateTime(task.created_at) }}</td>
+              <td class="actions-col" @click.stop>
+                <button
+                  v-if="platform.taskCanRetry(task)"
+                  class="secondary-action compact-action"
+                  :disabled="platform.loading"
+                  @click="platform.retryTask(task, $event)"
+                >
+                  <RotateCcw :size="14" />重试
+                </button>
+                <span v-else class="muted-cell">—</span>
+              </td>
             </tr>
             <tr v-if="!platform.tasks.length">
-              <td colspan="6" class="table-empty">暂无任务数据。</td>
+              <td colspan="7" class="table-empty">暂无任务数据。</td>
             </tr>
           </tbody>
         </table>

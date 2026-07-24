@@ -1,3 +1,5 @@
+import base64
+import binascii
 from pathlib import Path
 from typing import Any
 
@@ -7,26 +9,35 @@ from sqlalchemy.orm import Session
 
 from app.api.actor import actor_guest_session_value, batch_owned_by_actor, record_owned_by_actor, resolve_actor, scope_batches, scope_records
 from app.api.platform import (
-    analyze_path,
     batch_to_response,
-    get_source_resume_file,
     build_version_compare,
+    create_single_analysis_job,
+    get_source_resume_file,
     list_record_versions,
     record_to_response,
+    records_to_response,
     resolve_job_inputs,
     resolve_job_profile,
     resume_media_type,
+    retry_single_analysis,
 )
-from app.api.schemas import BulkDeleteHistoryRequest
-from app.api.task_dispatch import dispatch_batch_task
+from app.api.schemas import BulkDeleteHistoryRequest, DirectResumeAnalyzeRequest
+from app.api.task_dispatch import dispatch_batch_task, dispatch_single_analysis
 from app.core.config import settings
 from app.core.database import get_db
 from app.models.entities import AnalysisRecord, BatchTask, UploadedFile
-from app.services.storage import save_upload, validate_upload
+from app.services.storage import save_upload_bytes, validate_upload
 from app.tasks.celery_app import celery_enabled
 from app.utils.json_tools import dumps
 
 router = APIRouter()
+
+
+@router.get("/resume-templates/catalog")
+def resume_template_catalog() -> dict[str, Any]:
+    from app.services.resume_template_engine import list_template_catalog
+
+    return {"templates": list_template_catalog()}
 
 
 @router.get("/health")
@@ -67,6 +78,7 @@ def health(db: Session = Depends(get_db)) -> dict[str, str]:
 
 @router.post("/resumes/analyze")
 async def analyze_single(
+    background_tasks: BackgroundTasks,
     request: Request,
     file: UploadFile = File(...),
     target_position: str = Form(""),
@@ -78,8 +90,7 @@ async def analyze_single(
 ) -> dict[str, Any]:
     content = await file.read()
     validate_upload(file.filename or "", len(content), allow_zip=False)
-    await file.seek(0)
-    stored_path = await save_upload(file)
+    stored_path = save_upload_bytes(content, file.filename or "")
     actor = resolve_actor(request, db)
     parent_id = parent_record_id if parent_record_id > 0 else None
     if parent_id:
@@ -87,7 +98,7 @@ async def analyze_single(
         if not parent or not record_owned_by_actor(parent, actor):
             raise HTTPException(status_code=404, detail="父版本记录不存在。")
     try:
-        return analyze_path(
+        record = create_single_analysis_job(
             db,
             actor.user,
             stored_path,
@@ -99,6 +110,54 @@ async def analyze_single(
             guest_session_id=actor_guest_session_value(actor),
             parent_record_id=parent_id,
         )
+        dispatch_single_analysis(background_tasks, record.id)
+        payload = record_to_response(record, include_detail=False, db=db)
+        payload["async"] = True
+        return payload
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+
+@router.post("/resumes/analyze-direct")
+async def analyze_single_direct(
+    payload: DirectResumeAnalyzeRequest,
+    background_tasks: BackgroundTasks,
+    request: Request,
+    db: Session = Depends(get_db),
+) -> dict[str, Any]:
+    encoded = payload.content_base64.strip()
+    if encoded.startswith("data:") and "," in encoded:
+        encoded = encoded.split(",", 1)[1]
+    try:
+        content = base64.b64decode(encoded, validate=True)
+    except (binascii.Error, ValueError) as exc:
+        raise HTTPException(status_code=400, detail="上传文件编码无效。") from exc
+
+    validate_upload(payload.filename or "", len(content), allow_zip=False)
+    stored_path = save_upload_bytes(content, payload.filename or "")
+    actor = resolve_actor(request, db)
+    parent_id = payload.parent_record_id if payload.parent_record_id > 0 else None
+    if parent_id:
+        parent = db.query(AnalysisRecord).filter(AnalysisRecord.id == parent_id).first()
+        if not parent or not record_owned_by_actor(parent, actor):
+            raise HTTPException(status_code=404, detail="父版本记录不存在。")
+    try:
+        record = create_single_analysis_job(
+            db,
+            actor.user,
+            stored_path,
+            payload.filename or stored_path.name,
+            payload.target_position,
+            payload.job_description,
+            payload.enable_ai,
+            job_profile_id=payload.job_profile_id,
+            guest_session_id=actor_guest_session_value(actor),
+            parent_record_id=parent_id,
+        )
+        dispatch_single_analysis(background_tasks, record.id)
+        response = record_to_response(record, include_detail=False, db=db)
+        response["async"] = True
+        return response
     except ValueError as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
 
@@ -126,9 +185,10 @@ async def analyze_zip(
         .first()
     )
     if existing_batch:
-        return batch_to_response(existing_batch, include_results=True, db=db)
-    await file.seek(0)
-    zip_path = await save_upload(file)
+        response = batch_to_response(existing_batch, include_results=True, db=db)
+        response["reused"] = True
+        return response
+    zip_path = save_upload_bytes(content, file.filename or "")
     resolved_profile = resolve_job_profile(db, actor, job_profile_id)
     normalized_target_position, normalized_job_description = resolve_job_inputs(target_position, job_description, resolved_profile)
     guest_session_id = actor_guest_session_value(actor)
@@ -138,6 +198,7 @@ async def analyze_zip(
         job_profile_id=resolved_profile.id if resolved_profile else None,
         zip_filename=file.filename or zip_path.name,
         status="processing",
+        enable_ai=enable_ai,
         summary_json=dumps([]),
     )
     db.add(batch)
@@ -166,15 +227,6 @@ async def analyze_zip(
         job_profile_id=resolved_profile.id if resolved_profile else None,
         guest_session_id=guest_session_id,
     )
-    return batch_to_response(batch, include_results=True, db=db)
-
-
-@router.get("/batch-tasks/{batch_task_id}")
-def batch_task_detail(batch_task_id: int, request: Request, db: Session = Depends(get_db)) -> dict[str, Any]:
-    actor = resolve_actor(request, db)
-    batch = db.query(BatchTask).filter(BatchTask.id == batch_task_id).first()
-    if not batch or not batch_owned_by_actor(batch, actor):
-        raise HTTPException(status_code=404, detail="批量任务不存在。")
     return batch_to_response(batch, include_results=True, db=db)
 
 
@@ -211,10 +263,27 @@ def retry_batch_task(
 
 
 @router.get("/history")
-def history(request: Request, db: Session = Depends(get_db)) -> list[dict[str, Any]]:
+def history(
+    request: Request,
+    limit: int = 500,
+    offset: int = 0,
+    include_total: bool = True,
+    db: Session = Depends(get_db),
+) -> dict[str, Any]:
     actor = resolve_actor(request, db)
-    records = scope_records(db.query(AnalysisRecord), actor).order_by(AnalysisRecord.created_at.desc()).all()
-    return [record_to_response(record, include_detail=False, db=db) for record in records]
+    limit = max(1, min(limit, 500))
+    offset = max(0, offset)
+    query = scope_records(db.query(AnalysisRecord), actor).order_by(AnalysisRecord.created_at.desc())
+    total = query.count() if include_total else None
+    records = query.offset(offset).limit(limit).all()
+    payload: dict[str, Any] = {
+        "items": records_to_response(records, include_detail=False, db=db),
+        "limit": limit,
+        "offset": offset,
+    }
+    if total is not None:
+        payload["total"] = total
+    return payload
 
 
 @router.post("/history/bulk-delete")
@@ -227,10 +296,14 @@ def bulk_delete_history(payload: BulkDeleteHistoryRequest, request: Request, db:
     else:
         unique_ids = sorted({record_id for record_id in payload.record_ids if record_id > 0})
         if not unique_ids:
-            raise HTTPException(status_code=400, detail="record_ids cannot be empty when delete_all is false")
+            raise HTTPException(status_code=400, detail="请至少选择一条记录，或勾选清空全部。")
         records = scope_records(db.query(AnalysisRecord), actor).filter(AnalysisRecord.id.in_(unique_ids)).all()
-    deleted_record_ids = [delete_record_with_files(db, record) for record in records]
-    db.commit()
+    try:
+        deleted_record_ids = [delete_record_with_files(db, record) for record in records]
+        db.commit()
+    except Exception as exc:
+        db.rollback()
+        raise HTTPException(status_code=500, detail="批量删除失败，请稍后重试。") from exc
     return {"deleted": True, "deleted_count": len(deleted_record_ids), "deleted_record_ids": deleted_record_ids}
 
 
@@ -261,6 +334,103 @@ def history_compare(a: int, b: int, request: Request, db: Session = Depends(get_
         for item in all_versions
     ]
     return compare
+
+
+@router.post("/history/{record_id}/retry")
+def retry_single_analysis_route(
+    record_id: int,
+    background_tasks: BackgroundTasks,
+    request: Request,
+    db: Session = Depends(get_db),
+) -> dict[str, Any]:
+    actor = resolve_actor(request, db)
+    record = db.query(AnalysisRecord).filter(AnalysisRecord.id == record_id).first()
+    if not record or not record_owned_by_actor(record, actor):
+        raise HTTPException(status_code=404, detail="记录不存在。")
+    if record.batch_task_id:
+        raise HTTPException(status_code=400, detail="批量任务请前往批量分析页重试。")
+    return retry_single_analysis(record, background_tasks, db)
+
+
+@router.post("/history/{record_id}/rewrite-preview/refresh")
+def refresh_rewrite_preview_route(
+    record_id: int,
+    request: Request,
+    enable_ai: bool = False,
+    db: Session = Depends(get_db),
+) -> dict[str, Any]:
+    from app.api.platform import refresh_rewrite_preview
+
+    actor = resolve_actor(request, db)
+    record = db.query(AnalysisRecord).filter(AnalysisRecord.id == record_id).first()
+    if not record or not record_owned_by_actor(record, actor):
+        raise HTTPException(status_code=404, detail="记录不存在。")
+    if record.status != "success":
+        raise HTTPException(status_code=400, detail="仅支持对已完成的分析记录生成改写预览。")
+    return refresh_rewrite_preview(record, enable_ai=enable_ai, db=db)
+
+
+@router.post("/history/{record_id}/interview-prep/refresh")
+def refresh_interview_prep_route(
+    record_id: int,
+    request: Request,
+    enable_ai: bool = False,
+    db: Session = Depends(get_db),
+) -> dict[str, Any]:
+    from app.api.platform import refresh_interview_prep
+
+    actor = resolve_actor(request, db)
+    record = db.query(AnalysisRecord).filter(AnalysisRecord.id == record_id).first()
+    if not record or not record_owned_by_actor(record, actor):
+        raise HTTPException(status_code=404, detail="记录不存在。")
+    if record.status != "success":
+        raise HTTPException(status_code=400, detail="仅支持对已完成的分析记录生成面试题。")
+    interview_prep = refresh_interview_prep(record, enable_ai=enable_ai, db=db)
+    return interview_prep
+
+
+@router.get("/history/{record_id}/rewrite-report")
+def download_rewrite_report(record_id: int, request: Request, db: Session = Depends(get_db)):
+    from app.api.platform import download_rewrite_report_file
+
+    return download_rewrite_report_file(record_id, request, db)
+
+
+@router.get("/batch-tasks/{batch_task_id}")
+def batch_task_detail(
+    batch_task_id: int,
+    request: Request,
+    include_results: bool = True,
+    db: Session = Depends(get_db),
+) -> dict[str, Any]:
+    actor = resolve_actor(request, db)
+    batch = db.query(BatchTask).filter(BatchTask.id == batch_task_id).first()
+    if not batch or not batch_owned_by_actor(batch, actor):
+        raise HTTPException(status_code=404, detail="批量任务不存在。")
+    return batch_to_response(batch, include_results=include_results, db=db)
+
+
+@router.get("/history/{record_id}/report/download")
+def download_record_report(
+    record_id: int,
+    request: Request,
+    format: str = "pdf",
+    db: Session = Depends(get_db),
+):
+    from app.api.platform import download_record_report_file
+
+    return download_record_report_file(record_id, request, format, db)
+
+
+@router.get("/history/{record_id}/status")
+def history_status(record_id: int, request: Request, db: Session = Depends(get_db)) -> dict[str, Any]:
+    from app.api.platform import record_status_response
+
+    actor = resolve_actor(request, db)
+    record = db.query(AnalysisRecord).filter(AnalysisRecord.id == record_id).first()
+    if not record or not record_owned_by_actor(record, actor):
+        raise HTTPException(status_code=404, detail="记录不存在。")
+    return record_status_response(record, db)
 
 
 @router.get("/history/{record_id}")

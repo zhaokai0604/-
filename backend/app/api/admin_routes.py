@@ -15,12 +15,13 @@ from app.api.platform import (
     user_payload,
     write_audit,
 )
-from app.api.schemas import AdminAiConfigRequest, ResetPasswordRequest, UserRoleRequest, UserStatusRequest
+from app.api.schemas import AdminAiConfigRequest, AdminScoreConfigRequest, ResetPasswordRequest, StorageCleanupRequest, UserRoleRequest, UserStatusRequest
 from app.core.config import settings
 from app.core.database import get_db
 from app.models.entities import AnalysisRecord, JobProfile, User
 from app.services.auth import hash_password, validate_password_strength
-from app.services.runtime_config import get_ai_runtime_config, update_ai_runtime_config
+from app.services.runtime_config import get_ai_runtime_config, get_score_runtime_config, update_ai_runtime_config, update_score_runtime_config
+from app.services.file_lifecycle import cleanup_orphan_files
 
 router = APIRouter()
 
@@ -204,3 +205,27 @@ def admin_update_ai_config(payload: AdminAiConfigRequest, request: Request, db: 
         "api_key_masked": config["api_key_masked"],
         "using_local_override": config["using_local_override"],
     }
+
+
+@router.get("/admin/score-config")
+def admin_score_config(request: Request, db: Session = Depends(get_db)) -> dict[str, Any]:
+    require_admin(request, db)
+    return get_score_runtime_config()
+
+
+@router.put("/admin/score-config")
+def admin_update_score_config(payload: AdminScoreConfigRequest, request: Request, db: Session = Depends(get_db)) -> dict[str, Any]:
+    admin = require_admin(request, db)
+    config = update_score_runtime_config({"active_template": payload.active_template})
+    write_audit(db, admin, request, "admin.score_config.update", "system", None, {"active_template": config["active_template"]})
+    db.commit()
+    return {"saved": True, **config}
+
+
+@router.post("/admin/storage/cleanup")
+def admin_storage_cleanup(payload: StorageCleanupRequest, request: Request, db: Session = Depends(get_db)) -> dict[str, Any]:
+    admin = require_admin(request, db)
+    result = cleanup_orphan_files(db, dry_run=payload.dry_run)
+    write_audit(db, admin, request, "admin.storage.cleanup", "system", None, result)
+    db.commit()
+    return result

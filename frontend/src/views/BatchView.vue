@@ -1,6 +1,7 @@
 <script setup>
 import { Archive, PauseCircle, RefreshCw, RotateCcw } from 'lucide-vue-next'
 
+import JobProfileFields from '../components/JobProfileFields.vue'
 import { usePlatform } from '../stores/platform'
 
 const platform = usePlatform()
@@ -21,25 +22,17 @@ const platform = usePlatform()
         <span>压缩包内可包含多份 Word / PDF 简历</span>
       </label>
 
-      <label class="field">
-        <span>岗位模板</span>
-        <select v-model.number="platform.selectedJobProfileId" @change="platform.handleJobProfileChange">
-          <option :value="0">不使用模板，手动填写</option>
-          <option v-for="profile in platform.jobProfileOptions" :key="profile.id" :value="profile.id">
-            {{ profile.optionLabel }}
-          </option>
-        </select>
-      </label>
-
-      <label class="field">
-        <span>目标岗位</span>
-        <input v-model="platform.targetPosition" placeholder="例如：数据分析实习生" />
-      </label>
-
-      <label class="field">
-        <span>岗位 JD</span>
-        <textarea v-model="platform.jobDescription" rows="8" placeholder="粘贴统一岗位要求，用于批量岗位匹配分析。"></textarea>
-      </label>
+      <JobProfileFields
+        :model-value="platform.selectedJobProfileKey"
+        :target-position="platform.targetPosition"
+        :job-description="platform.jobDescription"
+        :profiles="platform.jobProfileOptions"
+        :presets="platform.jobProfilePresetOptions"
+        :textarea-rows="8"
+        @update:model-value="(value) => { platform.handleJobProfileChange(value) }"
+        @update:target-position="(value) => { platform.targetPosition = value }"
+        @update:job-description="(value) => { platform.jobDescription = value }"
+      />
 
       <button class="primary-action" :disabled="platform.loading || platform.batchTaskRunning">
         <Archive :size="18" />
@@ -81,13 +74,17 @@ const platform = usePlatform()
       </div>
 
       <div v-if="platform.batchResult" class="batch-summary">
-        <strong>{{ platform.batchResult.processed_files || 0 }}/{{ platform.batchResult.total_files || 0 }}</strong>
+        <strong>{{ platform.batchResult.processed_files || 0 }}/{{ (platform.batchResult.total_files || 0) + (platform.batchResult.skipped_count || 0) }}</strong>
         <span>{{ platform.batchResult.status_label || '已提交批量任务' }}</span>
       </div>
       <div v-if="platform.batchResult" class="batch-progress-block">
         <div class="batch-progress-meta">
           <span :class="['mode-tag', platform.batchStatusTone(platform.batchResult.status)]">{{ platform.batchResult.status_label }}</span>
-          <small>成功 {{ platform.batchResult.success_count || 0 }} / 失败 {{ platform.batchResult.failed_count || 0 }}</small>
+          <small>
+            成功 {{ platform.batchResult.success_count || 0 }}
+            / 失败 {{ platform.batchResult.failed_count || 0 }}
+            <template v-if="platform.batchResult.skipped_count"> / 跳过 {{ platform.batchResult.skipped_count }}</template>
+          </small>
         </div>
         <div class="batch-progress-bar">
           <div class="batch-progress-fill" :style="{ width: `${platform.batchProgress}%` }"></div>
@@ -100,7 +97,7 @@ const platform = usePlatform()
 
       <div class="table-wrap batch-result-table" v-if="platform.batchResult">
         <table class="data-table">
-          <thead><tr><th>文件</th><th>状态</th><th>解析</th><th>分数</th></tr></thead>
+          <thead><tr><th>文件</th><th>状态</th><th>模式</th><th>解析</th><th>分数</th></tr></thead>
           <tbody>
             <tr
               v-for="item in platform.batchResult.results"
@@ -108,8 +105,15 @@ const platform = usePlatform()
               :class="{ 'clickable-row': item.record_id }"
               @click="platform.openBatchResultRecord(item)"
             >
-              <td>{{ item.filename }}</td>
-              <td>{{ item.status }}</td>
+              <td>
+                {{ item.filename }}
+                <span v-if="item.reused" class="subtle-pill">复用</span>
+              </td>
+              <td><span :class="['mode-tag', platform.batchItemStatusTone(item.status)]">{{ platform.batchItemStatusLabel(item.status) }}</span></td>
+              <td>
+                <span v-if="item.analysis_mode_label || item.analysis_mode" class="mode-tag" :class="platform.displayAnalysisModeClass(item)">{{ platform.displayAnalysisModeLabel(item) }}</span>
+                <span v-else>-</span>
+              </td>
               <td>
                 <div class="batch-parse-cell">
                   <span :class="['mode-tag', platform.parseQualityTone(item.parse_quality)]">{{ platform.parseQualityLabel(item.parse_quality) }}</span>
