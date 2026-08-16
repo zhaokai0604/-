@@ -55,7 +55,7 @@ def remove_path(path_value: str | Path | None) -> None:
             settings.extracted_dir.resolve(),
             settings.reports_dir.resolve(),
         ]
-        if not any(str(resolved).startswith(str(root)) for root in allowed_roots):
+        if not any(resolved == root or resolved.is_relative_to(root) for root in allowed_roots):
             return
         if resolved.is_dir():
             shutil.rmtree(resolved, ignore_errors=True)

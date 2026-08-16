@@ -26,12 +26,19 @@ defineProps({
   },
 })
 
-const emit = defineEmits(['update:modelValue', 'update:targetPosition', 'update:jobDescription', 'profile-change'])
+const emit = defineEmits(['update:modelValue', 'update:targetPosition', 'update:jobDescription', 'profile-change', 'clear'])
 
 function onProfileChange(event) {
   const value = String(event.target.value || '0')
   emit('update:modelValue', value)
   emit('profile-change', value)
+}
+
+function onClear() {
+  emit('update:modelValue', '0')
+  emit('update:targetPosition', '')
+  emit('update:jobDescription', '')
+  emit('clear')
 }
 </script>
 
@@ -55,10 +62,20 @@ function onProfileChange(event) {
     </label>
 
     <label class="field">
-      <span>目标岗位</span>
+      <span class="field-label-row">
+        <span>目标岗位</span>
+        <button
+          v-if="targetPosition || jobDescription || String(modelValue) !== '0'"
+          type="button"
+          class="text-link field-clear-btn"
+          @click="onClear"
+        >
+          清空目标岗
+        </button>
+      </span>
       <input
         :value="targetPosition"
-        placeholder="例如：数据分析师、产品经理、运营实习生"
+        placeholder="可留空：不做套岗，仅通用分析 + 推荐岗位"
         @input="emit('update:targetPosition', $event.target.value)"
       />
     </label>
@@ -68,7 +85,7 @@ function onProfileChange(event) {
       <textarea
         :value="jobDescription"
         :rows="textareaRows"
-        placeholder="粘贴岗位要求，用于计算岗位匹配度。"
+        placeholder="可留空；粘贴岗位要求后用于计算岗位匹配度。"
         @input="emit('update:jobDescription', $event.target.value)"
       ></textarea>
     </label>

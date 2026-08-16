@@ -8,9 +8,23 @@ from app.api.platform import job_profile_payload, normalize_job_profile_payload
 from app.api.schemas import JobProfileRequest
 from app.core.database import get_db
 from app.models.entities import JobProfile
+from app.services.job_market import list_public_jobs
 from app.services.job_profile_presets import get_job_profile_preset, list_job_profile_presets, preset_payload
 
 router = APIRouter()
+
+
+@router.get("/job-market")
+def job_market(city: str = "", category: str = "", education: str = "") -> dict[str, Any]:
+    """Expose verified detail-page jobs; search-result candidates stay hidden."""
+    items = list_public_jobs()
+    filters = [city.strip().lower(), category.strip().lower(), education.strip().lower()]
+    filtered = []
+    for item in items:
+        values = [str(item.get("city", "")).lower(), str(item.get("category", "")).lower(), str(item.get("education", "")).lower()]
+        if all(not needle or needle in value for needle, value in zip(filters, values)):
+            filtered.append(item)
+    return {"items": filtered, "total": len(filtered), "verified_total": len(items)}
 
 
 @router.get("/job-profiles")

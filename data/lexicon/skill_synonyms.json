@@ -1,0 +1,16 @@
+{
+  "python": ["python", "pandas", "numpy", "sklearn", "fastapi", "django", "flask"],
+  "sql": ["sql", "mysql", "postgresql", "hive", "clickhouse", "spark"],
+  "excel": ["excel", "vba", "透视表", "表格"],
+  "visualization": ["可视化", "tableau", "powerbi", "power bi", "看板", "图表"],
+  "javascript": ["javascript", "js", "es6", "typescript", "ts"],
+  "vue": ["vue", "vue3", "vue.js", "nuxt"],
+  "react": ["react", "react.js", "hooks"],
+  "java": ["java", "spring", "springboot", "mybatis"],
+  "redis": ["redis", "缓存"],
+  "api": ["api", "接口", "rest", "jwt"],
+  "product": ["prd", "原型", "figma", "axure", "需求", "用户研究", "竞品"],
+  "new_media": ["小红书", "公众号", "抖音", "短视频", "文案", "涨粉", "完播率"],
+  "design": ["photoshop", "ps", "illustrator", "ai", "详情页", "主图", "海报"],
+  "video": ["premiere", "pr", "after effects", "ae", "剪辑", "剪映"]
+}

@@ -1,0 +1,82 @@
+{
+  "version": 1,
+  "cases": [
+    {
+      "id": "mismatch-chef",
+      "resume": "中餐烹饪技能与后厨实习。",
+      "job": "Java 后端开发",
+      "label": 1,
+      "note": "完全无关"
+    },
+    {
+      "id": "mismatch-sport",
+      "resume": "校足球队主力，组织训练。",
+      "job": "前端工程师",
+      "label": 1,
+      "note": "完全无关"
+    },
+    {
+      "id": "ops-douyin",
+      "resume": "抖音账号运营，完播率 35%，投放 ROI 1.8。",
+      "job": "短视频运营，要求抖音、完播率、投放",
+      "label": 5,
+      "note": "短视频"
+    },
+    {
+      "id": "ops-wechat",
+      "resume": "公众号选题与排版，月更 8 篇，打开率 12%。",
+      "job": "新媒体，要求公众号、文案、数据",
+      "label": 4,
+      "note": "公众号"
+    },
+    {
+      "id": "ops-vs-be",
+      "resume": "负责社群活动与裂变增长。",
+      "job": "后端开发，要求 Java 接口",
+      "label": 1,
+      "note": "跨岗"
+    },
+    {
+      "id": "pm-strong",
+      "resume": "产品实习：负责需求调研与竞品分析，输出 PRD，用 Figma 绘制原型并跟进迭代。",
+      "job": "产品经理助理，要求需求分析、原型、PRD、用户研究",
+      "label": 5,
+      "note": "产品强匹配"
+    },
+    {
+      "id": "pm-partial",
+      "resume": "运营实习：负责活动策划与用户增长，复盘转化率。",
+      "job": "产品经理，要求 PRD、原型、需求分析",
+      "label": 2,
+      "note": "部分相关"
+    },
+    {
+      "id": "pm-axure",
+      "resume": "用 Axure 画原型，组织评审并跟进开发排期。",
+      "job": "产品助理，要求原型、需求、沟通",
+      "label": 4,
+      "note": "原型工具"
+    },
+    {
+      "id": "pm-vs-ops",
+      "resume": "输出 PRD 与用户故事。",
+      "job": "新媒体运营，要求小红书文案",
+      "label": 1,
+      "note": "跨岗"
+    },
+    {
+      "id": "pm-roadmap",
+      "resume": "维护版本路线图，协调设计与研发里程碑。",
+      "job": "产品经理，要求规划、协作、迭代",
+      "label": 4,
+      "note": "规划"
+    },
+    {
+      "id": "pm-user-interview",
+      "resume": "完成 10 场用户访谈并提炼痛点。",
+      "job": "产品/用研，要求用户研究、访谈",
+      "label": 4,
+      "note": "用研"
+    }
+  ]
+}

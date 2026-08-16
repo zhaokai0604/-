@@ -251,6 +251,25 @@ watch(
   { immediate: true },
 )
 
+watch(
+  () => props.session?.round_id || props.session?.steps?.map((item) => item.question).join('|'),
+  (next, prev) => {
+    if (!next || next === prev) {
+      return
+    }
+    // 重新生成换题后，清空本轮进度，避免还停在旧题组
+    stopSpeaking()
+    stopListening()
+    currentIndex.value = 0
+    showTip.value = false
+    ratings.value = {}
+    voiceNotes.value = {}
+    voiceError.value = ''
+    localStorage.removeItem(storageKey.value)
+    startTimer()
+  },
+)
+
 onBeforeUnmount(() => {
   stopTimer()
   stopSpeaking()

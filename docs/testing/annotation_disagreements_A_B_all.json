@@ -1,0 +1,465 @@
+{
+  "version": 1,
+  "policy": "independent_two_annotator_annotation",
+  "cases_a": 59,
+  "cases_b": 15,
+  "common_cases": 15,
+  "missing_in_a": [],
+  "missing_in_b": [
+    "resume-016",
+    "resume-017",
+    "resume-018",
+    "resume-019",
+    "resume-020",
+    "resume-021",
+    "resume-022",
+    "resume-023",
+    "resume-024",
+    "resume-025",
+    "resume-026",
+    "resume-027",
+    "resume-028",
+    "resume-029",
+    "resume-030",
+    "resume-031",
+    "resume-032",
+    "resume-033",
+    "resume-034",
+    "resume-035",
+    "resume-036",
+    "resume-037",
+    "resume-038",
+    "resume-039",
+    "resume-040",
+    "resume-041",
+    "resume-042",
+    "resume-043",
+    "resume-044",
+    "resume-045",
+    "resume-046",
+    "resume-047",
+    "resume-048",
+    "resume-049",
+    "resume-050",
+    "resume-051",
+    "resume-052",
+    "resume-053",
+    "resume-054",
+    "resume-055",
+    "resume-056",
+    "resume-057",
+    "resume-058",
+    "resume-059"
+  ],
+  "disagreement_counts": {
+    "gold_sections": 10,
+    "parse_quality": 7,
+    "resume_quality": 6,
+    "issue_types": 10
+  },
+  "disagreements": [
+    {
+      "id": "resume-002",
+      "fields": {
+        "gold_sections": {
+          "annotator_a": [
+            "awards",
+            "basic_info",
+            "education",
+            "internship",
+            "projects",
+            "skills"
+          ],
+          "annotator_b": [
+            "awards",
+            "basic_info",
+            "campus",
+            "education",
+            "internship",
+            "projects",
+            "skills",
+            "summary"
+          ]
+        },
+        "parse_quality": {
+          "annotator_a": "high",
+          "annotator_b": "medium"
+        }
+      }
+    },
+    {
+      "id": "resume-003",
+      "fields": {
+        "gold_sections": {
+          "annotator_a": [
+            "awards",
+            "basic_info",
+            "campus",
+            "skills",
+            "summary"
+          ],
+          "annotator_b": [
+            "awards",
+            "basic_info",
+            "campus",
+            "education",
+            "skills",
+            "summary"
+          ]
+        },
+        "issue_types": {
+          "annotator_a": [
+            "layout_fragmentation",
+            "missing_internship",
+            "missing_metrics",
+            "missing_projects",
+            "ocr_noise"
+          ],
+          "annotator_b": [
+            "layout_fragmentation",
+            "missing_internship",
+            "missing_projects"
+          ]
+        }
+      }
+    },
+    {
+      "id": "resume-004",
+      "fields": {
+        "gold_sections": {
+          "annotator_a": [
+            "awards",
+            "basic_info",
+            "education",
+            "internship",
+            "projects",
+            "skills",
+            "summary"
+          ],
+          "annotator_b": [
+            "awards",
+            "basic_info",
+            "campus",
+            "education",
+            "internship",
+            "projects",
+            "skills",
+            "summary"
+          ]
+        },
+        "parse_quality": {
+          "annotator_a": "high",
+          "annotator_b": "medium"
+        }
+      }
+    },
+    {
+      "id": "resume-005",
+      "fields": {
+        "gold_sections": {
+          "annotator_a": [
+            "awards",
+            "basic_info",
+            "campus",
+            "skills",
+            "summary"
+          ],
+          "annotator_b": [
+            "awards",
+            "basic_info",
+            "education",
+            "internship",
+            "skills"
+          ]
+        },
+        "parse_quality": {
+          "annotator_a": "low",
+          "annotator_b": "medium"
+        },
+        "issue_types": {
+          "annotator_a": [
+            "layout_fragmentation",
+            "missing_internship",
+            "missing_metrics",
+            "ocr_noise",
+            "weak_structure"
+          ],
+          "annotator_b": [
+            "layout_fragmentation",
+            "missing_projects"
+          ]
+        }
+      }
+    },
+    {
+      "id": "resume-006",
+      "fields": {
+        "gold_sections": {
+          "annotator_a": [
+            "awards",
+            "basic_info",
+            "education",
+            "internship",
+            "skills",
+            "summary"
+          ],
+          "annotator_b": [
+            "basic_info",
+            "campus",
+            "education",
+            "internship",
+            "projects",
+            "skills",
+            "summary"
+          ]
+        },
+        "resume_quality": {
+          "annotator_a": 3,
+          "annotator_b": 4
+        },
+        "issue_types": {
+          "annotator_a": [
+            "layout_fragmentation",
+            "missing_projects"
+          ],
+          "annotator_b": []
+        }
+      }
+    },
+    {
+      "id": "resume-007",
+      "fields": {
+        "parse_quality": {
+          "annotator_a": "high",
+          "annotator_b": "medium"
+        },
+        "resume_quality": {
+          "annotator_a": 3,
+          "annotator_b": 4
+        }
+      }
+    },
+    {
+      "id": "resume-008",
+      "fields": {
+        "parse_quality": {
+          "annotator_a": "low",
+          "annotator_b": "medium"
+        },
+        "resume_quality": {
+          "annotator_a": 2,
+          "annotator_b": 3
+        },
+        "issue_types": {
+          "annotator_a": [
+            "layout_fragmentation",
+            "missing_metrics",
+            "missing_projects",
+            "ocr_noise",
+            "weak_structure"
+          ],
+          "annotator_b": [
+            "layout_fragmentation",
+            "missing_internship",
+            "missing_projects"
+          ]
+        }
+      }
+    },
+    {
+      "id": "resume-009",
+      "fields": {
+        "gold_sections": {
+          "annotator_a": [],
+          "annotator_b": [
+            "awards",
+            "basic_info",
+            "campus",
+            "education",
+            "skills",
+            "summary"
+          ]
+        },
+        "parse_quality": {
+          "annotator_a": "low",
+          "annotator_b": "medium"
+        },
+        "resume_quality": {
+          "annotator_a": 1,
+          "annotator_b": 3
+        },
+        "issue_types": {
+          "annotator_a": [
+            "layout_fragmentation",
+            "missing_metrics",
+            "ocr_noise",
+            "weak_structure"
+          ],
+          "annotator_b": [
+            "layout_fragmentation",
+            "missing_internship",
+            "missing_projects"
+          ]
+        }
+      }
+    },
+    {
+      "id": "resume-010",
+      "fields": {
+        "resume_quality": {
+          "annotator_a": 2,
+          "annotator_b": 3
+        },
+        "issue_types": {
+          "annotator_a": [
+            "layout_fragmentation",
+            "missing_internship",
+            "missing_metrics",
+            "missing_projects"
+          ],
+          "annotator_b": [
+            "layout_fragmentation",
+            "missing_internship",
+            "missing_projects"
+          ]
+        }
+      }
+    },
+    {
+      "id": "resume-012",
+      "fields": {
+        "gold_sections": {
+          "annotator_a": [
+            "basic_info",
+            "campus",
+            "projects",
+            "summary"
+          ],
+          "annotator_b": [
+            "basic_info",
+            "campus",
+            "education",
+            "summary"
+          ]
+        },
+        "issue_types": {
+          "annotator_a": [
+            "layout_fragmentation",
+            "missing_internship",
+            "weak_structure"
+          ],
+          "annotator_b": [
+            "layout_fragmentation",
+            "missing_internship",
+            "missing_projects"
+          ]
+        }
+      }
+    },
+    {
+      "id": "resume-013",
+      "fields": {
+        "gold_sections": {
+          "annotator_a": [
+            "awards",
+            "basic_info",
+            "campus",
+            "internship",
+            "skills",
+            "summary"
+          ],
+          "annotator_b": [
+            "basic_info",
+            "campus",
+            "education"
+          ]
+        },
+        "resume_quality": {
+          "annotator_a": 3,
+          "annotator_b": 2
+        },
+        "issue_types": {
+          "annotator_a": [
+            "layout_fragmentation",
+            "missing_projects",
+            "weak_structure"
+          ],
+          "annotator_b": [
+            "layout_fragmentation",
+            "missing_internship",
+            "missing_projects"
+          ]
+        }
+      }
+    },
+    {
+      "id": "resume-014",
+      "fields": {
+        "gold_sections": {
+          "annotator_a": [
+            "awards",
+            "basic_info",
+            "campus",
+            "skills",
+            "summary"
+          ],
+          "annotator_b": [
+            "awards",
+            "basic_info",
+            "campus",
+            "education",
+            "skills",
+            "summary"
+          ]
+        },
+        "issue_types": {
+          "annotator_a": [
+            "layout_fragmentation",
+            "missing_internship",
+            "missing_metrics",
+            "missing_projects",
+            "weak_structure"
+          ],
+          "annotator_b": [
+            "missing_internship",
+            "missing_projects"
+          ]
+        }
+      }
+    },
+    {
+      "id": "resume-015",
+      "fields": {
+        "gold_sections": {
+          "annotator_a": [
+            "basic_info",
+            "education",
+            "internship",
+            "skills",
+            "summary"
+          ],
+          "annotator_b": [
+            "awards",
+            "basic_info",
+            "campus",
+            "education",
+            "internship",
+            "projects",
+            "skills",
+            "summary"
+          ]
+        },
+        "parse_quality": {
+          "annotator_a": "high",
+          "annotator_b": "medium"
+        },
+        "issue_types": {
+          "annotator_a": [
+            "missing_projects"
+          ],
+          "annotator_b": []
+        }
+      }
+    }
+  ]
+}

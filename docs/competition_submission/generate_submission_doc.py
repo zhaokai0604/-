@@ -31,7 +31,7 @@ FONT_PATH = ROOT / "assets" / "fonts" / "NotoSansSC-Regular.ttf"
 TITLE = "简历评价与分析平台"
 SUBTITLE = "面向高校求职场景的简历解析、评价、岗位匹配与报告输出平台"
 VERSION = "V2.0 参赛文档"
-FINISH_DATE = "2026年6月30日"
+FINISH_DATE = "2026年8月3日"
 
 
 THEME_BLUE = RGBColor(34, 91, 170)
@@ -312,7 +312,7 @@ def add_figure_placeholder(doc: Document, item: FigureItem) -> None:
     p.alignment = WD_ALIGN_PARAGRAPH.CENTER
     p.paragraph_format.space_before = Pt(26)
     p.paragraph_format.space_after = Pt(16)
-    r = p.add_run("图示占位")
+    r = p.add_run("示意图生成失败")
     set_run_font(r, 16, True, THEME_BLUE)
     p = cell.add_paragraph()
     p.alignment = WD_ALIGN_PARAGRAPH.CENTER
@@ -352,7 +352,7 @@ def _figure(doc: Document, item: FigureItem) -> None:
     if image_path and image_path.exists():
         add_figure_image(doc, item, image_path)
     else:
-        add_figure_placeholder(doc, item)
+        raise FileNotFoundError(f"缺少参赛文档图示资源: {item.code}")
 
 
 def get_test_file_breakdown() -> list[list[str]]:
@@ -585,7 +585,7 @@ def build_summary(doc: Document) -> None:
         "在此背景下，本文围绕现有项目仓库与赛题要求，形成《简历评价与分析平台》参赛文档。平台面向高校就业指导场景，支持DOCX、PDF与ZIP批量输入，能够完成文档接入、安全校验、结构化解析、六维评价、岗位证据匹配、问题诊断、修改建议生成以及Word/PDF报告输出，并通过学生端、教师端、管理端三类角色协同，形成从上传、分析、展示、导出到记录沉淀的完整服务闭环。",
         "在技术路线方面，系统采用前后端分离架构：前端基于Vue 3与Vite构建工作台和图表展示界面，后端基于FastAPI、SQLAlchemy和MySQL构建分析与治理服务，辅以Redis和Celery支持异步任务编排。平台分析主链以文档解析、结构化字段识别、规则评分、岗位匹配和可执行建议为核心，并通过可选DeepSeek增强服务补充诊断表达、改写预览与面试准备能力，同时保留完整的离线规则回退策略，以确保比赛环境中的稳定性、解释性与可复现性。",
         "在结果表达方面，平台不是简单输出单一总分，而是围绕内容完整性、经历相关性、语言专业性、格式规范性、亮点量化程度和岗位语义匹配六个维度生成量化结果，进一步结合岗位关键词覆盖、证据片段、缺失要素和行动路线图输出具有落地性的优化建议。相较于常见只提供模板推荐或笼统建议的同类工具，本项目更强调“哪里有问题、为什么是问题、如何修改、与目标岗位差距在哪里”的闭环表达。",
-        "在工程验证方面，截至2026年6月30日，项目后端共包含17个测试文件、68个测试函数，本机执行pytest结果为68 passed、101 warnings、耗时5.88秒；前端生产构建通过，Vite构建阶段共完成2158个模块转换并生成dist产物；后端应用总路由数为58条，支撑认证、分析、任务、岗位、教师和管理等业务链条。测试与构建结果表明，该平台具备较强的功能完整性、演示可靠性与工程成熟度。",
+        "在工程验证方面，截至2026年8月3日，项目后端包含25个测试文件、107个测试函数，本机执行pytest结果为107 passed、122 warnings；前端生产构建通过，Vite完成2161个模块转换并生成dist产物。测试与构建结果表明，该平台具备较强的功能完整性、演示可靠性与工程成熟度。",
         "综合来看，简历评价与分析平台既可以服务学生个体的简历优化和岗位准备，也能够为教师端群体指导与学校端就业服务数字化提供支撑。平台在问题界定、方案组织、关键技术、应用价值和验证材料上形成了较为完整的参赛作品结构，具备较好的展示效果、推广潜力与后续扩展空间。",
     ]
     for text in paragraphs:
@@ -606,7 +606,7 @@ def build_key_highlights(doc: Document) -> None:
                 ["赛题痛点抓取准确", "围绕高校就业指导中的简历分析与岗位匹配真实问题展开", "2026届毕业生规模、就业服务体系建设与24365相关公开信息"],
                 ["平台闭环完整", "完成上传、解析、评价、匹配、建议、导出、沉淀全流程", "学生端、教师端、管理端与任务中心、报告中心联动"],
                 ["技术路线稳健", "规则主链负责稳定性与解释性，AI增强负责表达优化", "analysis_pipeline、score_engine、match_engine、offline_fallback 逻辑"],
-                ["工程证明充分", "测试、构建、部署、安全材料齐全，不是空壳调用", "68 passed、前端 build 通过、ci.yml、部署指南、安全说明"],
+                ["工程证明充分", "测试、构建、部署、安全材料齐全，不是空壳调用", "107 passed、前端 build 通过、ci.yml、部署指南、安全说明"],
                 ["应用价值清晰", "同时面向学生、教师和学校三层角色形成价值闭环", "应用价值章节与教师统计、管理治理模块实现"],
             ],
         ),
@@ -1009,8 +1009,8 @@ def chapter_three(doc: Document) -> None:
 
     add_section_heading(doc, 2, "3.7 平台工程支撑与可信验证")
     for text in [
-        "截至2026年6月30日，平台后端已形成14个API层模块、26个服务层模块、58条应用路由，前端包含15个主要页面视图。项目采用FastAPI、SQLAlchemy、Vue 3、Vite、MySQL、Redis和Celery等技术栈完成平台组织，既覆盖基础分析链路，也覆盖任务、报告、教师端和管理端功能。",
-        "工程可信度方面，项目后端测试目录共包含17个测试文件、68个测试函数。2026年6月30日本机执行pytest结果为68 passed、101 warnings、耗时5.88秒；GitHub Actions配置同时包含后端自动化测试和前端生产构建；同日执行npm run build，Vite完成2158个模块转换并成功生成dist产物。测试与构建材料说明平台并非概念演示，而具备真实可运行与可验证的工程基础。",
+        "截至2026年8月3日，平台后端已形成14个API层模块、26个服务层模块，前端包含15个主要页面视图。项目采用FastAPI、SQLAlchemy、Vue 3、Vite、MySQL、Redis和Celery等技术栈完成平台组织，既覆盖基础分析链路，也覆盖任务、报告、教师端和管理端功能。",
+        "工程可信度方面，项目后端测试目录共包含25个测试文件、107个测试函数。2026年8月3日本机执行pytest结果为107 passed、122 warnings；GitHub Actions配置同时包含后端自动化测试和前端生产构建；同日执行npm run build，Vite完成2161个模块转换并成功生成dist产物。测试与构建材料说明平台并非概念演示，而具备真实可运行与可验证的工程基础。",
     ]:
         add_body_paragraph(doc, text, first_line=True)
     add_body_paragraph(doc, "若进一步拆开看，工程支撑至少覆盖四个层面：一是后端服务层模块化，说明功能并非写在单一脚本中；二是前端页面与工作台组织，说明作品具备完整交互形态；三是自动化测试和CI，说明关键能力具备回归验证基础；四是部署指南、Nginx 示例、Docker Compose 和数据安全说明，说明项目已经考虑到“如何跑起来、如何被管理、如何控制边界”。对于参赛文档而言，这些支撑共同构成了评委判断“是不是空壳项目”的重要依据。", first_line=True)
@@ -1080,10 +1080,10 @@ def chapter_three(doc: Document) -> None:
             ["项目", "当前结果"],
             [
                 ["后端测试文件数", "17 个"],
-                ["测试函数数", "68 个"],
-                ["最新 pytest 结果", "68 passed, 101 warnings in 5.88s（2026-06-30）"],
+                ["测试函数数", "107 个"],
+                ["最新 pytest 结果", "107 passed, 122 warnings（2026-08-03）"],
                 ["CI 配置", "后端 pytest + 前端 build 双流水线"],
-                ["前端构建结果", "Vite 构建成功，2158 modules transformed"],
+                ["前端构建结果", "Vite 构建成功，2161 modules transformed"],
                 ["后端路由规模", "58 条应用路由"],
             ],
         ),
@@ -1357,7 +1357,7 @@ def references(doc: Document) -> None:
 def appendix_a(doc: Document) -> None:
     add_section_heading(doc, 1, "附录A 测试验证与支撑材料")
     add_body_paragraph(doc, "本项目测试材料用于证明平台不是概念演示，而是具备真实可运行、可验证和可回归的工程基础。后端测试目录包含17个测试文件、68个测试函数，覆盖解析器、流水线、权限、异步分析、批量处理、教师端、模板推荐和面试模块等主要能力。", first_line=True)
-    add_body_paragraph(doc, "截至2026年6月30日本机实测，后端执行 pytest 结果为 68 passed、101 warnings、耗时 5.88 秒；同日前端执行 npm run build 成功，Vite 构建阶段共完成 2158 个模块转换并生成 dist 产物；仓库同时包含单个 ci.yml 工作流，对 push 至 main/master 与 pull request 执行后端测试与前端构建。以上材料共同构成了“本地实测 + 仓库自动验证”的双重支撑。", first_line=True)
+    add_body_paragraph(doc, "截至2026年8月3日本机实测，后端执行 pytest 结果为 107 passed、122 warnings；同日前端执行 npm run build 成功，Vite 构建阶段共完成 2161 个模块转换并生成 dist 产物；仓库同时包含单个 ci.yml 工作流，对 push 至 main/master 与 pull request 执行后端测试与前端构建。以上材料共同构成了“本地实测 + 仓库自动验证”的双重支撑。", first_line=True)
     add_table_block(
         doc,
         TableItem(
@@ -1367,8 +1367,8 @@ def appendix_a(doc: Document) -> None:
             [
                 ["测试文件数", "17"],
                 ["测试函数数", "68"],
-                ["最新 pytest 结果", "68 passed, 101 warnings"],
-                ["测试总耗时", "5.88s"],
+                ["最新 pytest 结果", "107 passed, 122 warnings"],
+                ["测试总耗时", "以答辩前最后一次本机实测为准"],
             ],
         ),
         [5.5, 10.0],
@@ -1416,7 +1416,7 @@ def appendix_a(doc: Document) -> None:
             "验证口径与材料来源对应表",
             ["验证口径", "当前结论", "来源说明"],
             [
-                ["后端功能回归", "68 项测试全部通过", "2026-06-30 本机执行 pytest"],
+                ["后端功能回归", "107 项测试全部通过", "2026-08-03 本机执行 pytest"],
                 ["前端交付性", "生产构建成功", "2026-06-30 本机执行 npm run build"],
                 ["接口组织规模", "58 条路由、7 个主要 API 模块方向", "backend/app/api 代码统计"],
                 ["服务层体量", "26 个服务模块", "backend/app/services 目录统计"],
@@ -1441,7 +1441,7 @@ def appendix_a(doc: Document) -> None:
         ),
         [3.4, 5.0, 6.6],
     )
-    add_body_paragraph(doc, "需要特别说明的是，本稿中的工程验证口径全部采用绝对时间和可回溯来源表达，例如“2026年6月30日本机执行”“仓库当前包含的 ci.yml 工作流”等，而不使用含糊的“已支持”“已有较完善测试”表述。这样做的目的是让评审在阅读时可以明确区分：哪些是公开政策背景，哪些是当前仓库事实，哪些是当日实测结果。", first_line=True)
+    add_body_paragraph(doc, "需要特别说明的是，本稿中的工程验证口径全部采用绝对时间和可回溯来源表达，例如“2026年8月3日本机执行”“仓库当前包含的 ci.yml 工作流”等，而不使用含糊的“已支持”“已有较完善测试”表述。这样做的目的是让评审在阅读时可以明确区分：哪些是公开政策背景，哪些是当前仓库事实，哪些是当日实测结果。", first_line=True)
     _figure(
         doc,
         FigureItem("图A-1", "测试验证支撑结构图", "展示自动化测试、前端构建、CI 与部署检查之间的支撑关系。"),

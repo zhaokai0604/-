@@ -11,11 +11,12 @@ from app.core.env import is_production_like, load_project_env, project_root
 logger = logging.getLogger(__name__)
 
 _INSECURE_SESSION_SECRET = "resume-ai-local-dev-secret-change-me"
+_INSECURE_ADMIN_PASSWORDS = {"ResumeAi@2026", "ChangeThisDemoPassword1", ""}
 
 
 @dataclass
 class Settings:
-    app_name: str = field(default_factory=lambda: os.getenv("APP_NAME", "简历评价智能体"))
+    app_name: str = field(default_factory=lambda: os.getenv("APP_NAME", "简析智评——大学生简历诊断与求职成长平台"))
     project_root: Path = field(default_factory=project_root)
     database_url: str = field(default_factory=lambda: os.getenv("DATABASE_URL", ""))
     allowed_origins: List[str] = field(default_factory=lambda: os.getenv("ALLOWED_ORIGINS", "http://localhost:5173,http://127.0.0.1:5173").split(","))
@@ -28,6 +29,7 @@ class Settings:
     session_cookie_secure: bool = field(default_factory=lambda: os.getenv("SESSION_COOKIE_SECURE", "false").lower() == "true")
     guest_session_cookie_name: str = field(default_factory=lambda: os.getenv("GUEST_SESSION_COOKIE_NAME", "resume_ai_guest_session"))
     guest_session_expire_days: int = field(default_factory=lambda: int(os.getenv("GUEST_SESSION_EXPIRE_DAYS", "30")))
+    public_base_url: str = field(default_factory=lambda: os.getenv("PUBLIC_BASE_URL", "").strip())
     redis_url: str = field(default_factory=lambda: os.getenv("REDIS_URL", ""))
     use_celery: bool = field(default_factory=lambda: os.getenv("USE_CELERY", "false").lower() == "true")
     allow_register: bool = field(default_factory=lambda: os.getenv("ALLOW_REGISTER", "true").lower() == "true")
@@ -78,6 +80,17 @@ def _validate_settings(settings: Settings) -> None:
             raise RuntimeError(message)
         warnings.warn(message, stacklevel=2)
         logger.warning(message)
+    if is_production_like():
+        if settings.admin_password in _INSECURE_ADMIN_PASSWORDS or len(settings.admin_password) < 12:
+            raise RuntimeError("ADMIN_PASSWORD is still the demo password; set a unique production password.")
+        # Public registration is a deployment policy, not an unsafe default.
+        # The endpoint still applies rate limiting, password validation, and
+        # active-account checks; operators can close it with ALLOW_REGISTER=false.
+        # Secure cookies are mandatory when the public endpoint is HTTPS. The
+        # current demo server is intentionally HTTP-only, so requiring Secure
+        # here would silently break browser sessions instead of protecting them.
+        if settings.public_base_url.lower().startswith("https://") and not settings.session_cookie_secure:
+            raise RuntimeError("SESSION_COOKIE_SECURE must be true in production.")
 
 
 @lru_cache

@@ -64,7 +64,7 @@ watch(
           </div>
           <div>
             <h1>简析智评</h1>
-            <p>高校学生求职简历分析与优化平台</p>
+            <p>大学生简历诊断与求职成长平台</p>
           </div>
           <button type="button" class="sidebar-close" aria-label="关闭导航" @click="closeSidebar">
             <X :size="20" />

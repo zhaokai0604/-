@@ -228,7 +228,77 @@ def test_version_compare_same_root_only(client: TestClient):
     assert ok.status_code == 200
     body = ok.json()
     assert body["summary"]["total_score_delta"] == 9
+    assert body["summary"]["direction"] == "up"
+    assert body["summary"]["improved_dimensions"] >= 1
     assert len(body["dimension_deltas"]) >= 1
+    assert body["dimension_deltas"][0]["direction"] in {"up", "down", "flat"}
 
     bad = client.get(f"/api/history/compare?a={root_id}&b={root_id}", cookies=user_cookies)
     assert bad.status_code == 400
+
+
+def test_legacy_detected_target_repair_does_not_recalculate_scores(client, monkeypatch):
+    """Reading a legacy record must never change its persisted analysis result."""
+    from app.api.platform import record_to_response
+    from app.utils.json_tools import dumps, loads
+
+    with SessionLocal() as db:
+        user = db.query(User).filter(User.username == "guest").first()
+        record = AnalysisRecord(
+            user_id=user.id,
+            original_filename="legacy-detected-target.docx",
+            target_position="新媒体运营",
+            job_description="",
+            total_score=59,
+            scores_json=dumps(
+                {
+                    "content_completeness": 63,
+                    "experience_match": 58,
+                    "language_professionalism": 61,
+                    "format_standardization": 64,
+                    "highlight_strength": 57,
+                    "job_match": 55,
+                }
+            ),
+            sections_json=dumps({"_rewrite_preview": {"target_position": "新媒体运营"}}),
+            diagnosis_json=dumps(["已保存的历史诊断"]),
+            suggestions_json=dumps(["已保存的历史建议"]),
+            match_result_json=dumps(
+                {
+                    "score": 55,
+                    "target_position": "新媒体运营",
+                    "target_source": "detected",
+                    "profile": "detected",
+                    "matched_keywords": ["内容运营"],
+                    "missing_keywords": ["短视频"],
+                }
+            ),
+            analysis_mode="core",
+            status="success",
+        )
+        db.add(record)
+        db.commit()
+        db.refresh(record)
+
+        def fail_if_recalculated(*args, **kwargs):
+            raise AssertionError("history serialization must not run the analysis pipeline")
+
+        monkeypatch.setattr("app.api.platform._run_analysis_pipeline", fail_if_recalculated)
+        first = record_to_response(record, include_detail=True, db=db)
+        db.refresh(record)
+        second = record_to_response(record, include_detail=True, db=db)
+
+        assert first["total_score"] == 59
+        assert second["total_score"] == 59
+        assert first["scores"] == second["scores"]
+        assert first["scores"] == {
+            "content_completeness": 63,
+            "experience_match": 58,
+            "language_professionalism": 61,
+            "format_standardization": 64,
+            "highlight_strength": 57,
+            "job_match": 55,
+        }
+        assert second["target_position"] == ""
+        assert second["target_position_source"] == "generic"
+        assert loads(record.match_result_json, {})["target_source"] == "generic"

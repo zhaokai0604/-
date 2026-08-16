@@ -69,7 +69,7 @@ async def lifespan(_app: FastAPI):
 
 
 app = FastAPI(
-    title="简历评价智能体",
+    title="简析智评——大学生简历诊断与求职成长平台",
     description="高校学生求职简历分析与优化平台",
     version="0.3.0",
     lifespan=lifespan,

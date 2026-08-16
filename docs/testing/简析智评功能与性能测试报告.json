@@ -1,0 +1,189 @@
+{
+  "version": 1,
+  "generated_at": "2026-08-03T20:08:25",
+  "functional": {
+    "synthetic_parse": {
+      "cases": 20,
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1": 1.0,
+      "exact_case_rate": 1.0
+    },
+    "pipeline_smoke": {
+      "returncode": 0,
+      "duration_ms": 1019.13,
+      "tail": "=== �Ż���·��֤ ===\n�ܷ�: 54.8\n֤�����Ŷ�: 0.52\n���������: 2\n������ʾ: 5\n�Ż���Ķ�: 3\nDOCX: C:\\Users\\Administrator\\Desktop\\�ĵ�\\��ѧ������Ҫ�����ʴ���\\���Ŀ���\\����\\��������V2.0\\data\\reports\\rewrite_999001.docx (37636 bytes)\n[OK] total_score\n[OK] has_scores\n[OK] has_optimized\n[OK] has_diffs\n[OK] has_skill_hints\n[OK] has_low_snr_or_confidence\n[OK] rewrite_mode\n[OK] docx_exists\nALL CHECKS PASSED\n\nBuilding prefix dict from the default dictionary ...\nLoading model from cache C:\\Users\\Administrator\\AppData\\Local\\Temp\\jieba.cache\nLoading model cost 0.315 seconds.\nPrefix dict has been built successfully."
+    }
+  },
+  "match_ablation": {
+    "cases": 61,
+    "rule_spearman": 0.5053,
+    "semantic_spearman": 0.9056,
+    "semantic_primary_spearman": 0.902,
+    "evaluation_scope": "exploratory_same_weak_label_set_not_holdout",
+    "disclaimer": "探索附录：同源弱标注，不作平台泛化准确率；主答辩勿引用本块数字",
+    "fused_spearman": 0.902,
+    "fused_lift_vs_rule": 0.3967
+  },
+  "guardrail_eval": {
+    "cases": 4,
+    "false_positive_rate": 0.0,
+    "violation_detection_rate": 1.0,
+    "unknown_safe_rate": 1.0,
+    "rows": [
+      {
+        "expected": "pass",
+        "observed": "pass"
+      },
+      {
+        "expected": "fail",
+        "observed": "fail"
+      },
+      {
+        "expected": "fail",
+        "observed": "fail"
+      },
+      {
+        "expected": "unknown",
+        "observed": "unknown"
+      }
+    ]
+  },
+  "real_corpus": {
+    "files": 59,
+    "baseline_no_ocr": {
+      "docx": 33,
+      "pdf": 26,
+      "text_ok": 33,
+      "text_empty": 26,
+      "total": 59,
+      "text_rate": 0.5593
+    },
+    "improved_ocr": {
+      "docx": 33,
+      "pdf": 26,
+      "text_ok": 59,
+      "text_empty": 0,
+      "total": 59,
+      "text_rate": 1.0
+    },
+    "analysis_success": 59,
+    "analysis_rate": 1.0,
+    "quality_pass": 59,
+    "quality_pass_rate": 1.0,
+    "quality_counts": {
+      "high": 33,
+      "medium": 26
+    },
+    "analysis_timing": {
+      "count": 59,
+      "mean_ms": 1016.19,
+      "p50_ms": 443.83,
+      "p95_ms": 2087.01,
+      "min_ms": 31.93,
+      "max_ms": 2395.94
+    },
+    "failure_types": []
+  },
+  "performance": {
+    "sample_type": "docx",
+    "warmup_ms": 415.37,
+    "baseline": {
+      "count": 10,
+      "mean_ms": 416.67,
+      "p50_ms": 414.14,
+      "p95_ms": 425.41,
+      "min_ms": 410.07,
+      "max_ms": 425.41
+    },
+    "pressure_20": {
+      "count": 20,
+      "mean_ms": 417.45,
+      "p50_ms": 417.94,
+      "p95_ms": 424.43,
+      "min_ms": 409.81,
+      "max_ms": 428.11
+    },
+    "capacity": {
+      "1": {
+        "requested": 1,
+        "completed": 1,
+        "wall_ms": 425.93
+      },
+      "5": {
+        "requested": 5,
+        "completed": 5,
+        "wall_ms": 2054.16
+      },
+      "10": {
+        "requested": 10,
+        "completed": 10,
+        "wall_ms": 4021.21
+      },
+      "20": {
+        "requested": 20,
+        "completed": 20,
+        "wall_ms": 8212.24
+      }
+    },
+    "concurrency": {
+      "2": {
+        "workers": 2,
+        "success": 2,
+        "failures": 0,
+        "wall_ms": 330.34,
+        "task_timing": {
+          "count": 2,
+          "mean_ms": 320.79,
+          "p50_ms": 312.02,
+          "p95_ms": 329.57,
+          "min_ms": 312.02,
+          "max_ms": 329.57
+        }
+      },
+      "4": {
+        "workers": 4,
+        "success": 4,
+        "failures": 0,
+        "wall_ms": 525.88,
+        "task_timing": {
+          "count": 4,
+          "mean_ms": 509.9,
+          "p50_ms": 513.05,
+          "p95_ms": 523.88,
+          "min_ms": 500.27,
+          "max_ms": 523.88
+        }
+      },
+      "8": {
+        "workers": 8,
+        "success": 8,
+        "failures": 0,
+        "wall_ms": 927.55,
+        "task_timing": {
+          "count": 8,
+          "mean_ms": 904.78,
+          "p50_ms": 916.67,
+          "p95_ms": 922.48,
+          "min_ms": 860.39,
+          "max_ms": 922.48
+        }
+      }
+    }
+  },
+  "pytest": {
+    "returncode": 0,
+    "duration_ms": 20926.64,
+    "tail": "........................................................................ [ 59%]\n..................................................                       [100%]\n============================== warnings summary ===============================\n.venv\\Lib\\site-packages\\requests\\__init__.py:113\n  C:\\Users\\Administrator\\Desktop\\�ĵ�\\��ѧ������Ҫ�����ʴ���\\���Ŀ���\\����\\��������V2.0\\backend\\.venv\\Lib\\site-packages\\requests\\__init__.py:113: RequestsDependencyWarning: urllib3 (2.7.0) or chardet (7.4.3)/charset_normalizer (3.4.7) doesn't match a supported version!\n    warnings.warn(\n\ntests/test_analysis_live_stream.py: 5 warnings\ntests/test_async_analysis.py: 32 warnings\ntests/test_database_schema.py: 4 warnings\ntests/test_live_analysis_stream.py: 11 warnings\ntests/test_platform.py: 38 warnings\ntests/test_teacher_classes.py: 2 warnings\ntests/test_teacher_records.py: 4 warnings\n  C:\\Users\\Administrator\\Desktop\\�ĵ�\\��ѧ������Ҫ�����ʴ���\\���Ŀ���\\����\\��������V2.0\\backend\\.venv\\Lib\\site-packages\\sqlalchemy\\sql\\schema.py:3623: DeprecationWarning: datetime.datetime.utcnow() is deprecated and scheduled for removal in a future version. Use timezone-aware objects to represent datetimes in UTC: datetime.datetime.now(datetime.UTC).\n    return util.wrap_callable(lambda ctx: fn(), fn)  # type: ignore\n\ntests/test_async_analysis.py::test_ai_enhancement_updates_success_record\ntests/test_async_analysis.py::test_ai_enhancement_failure_returns_core_label\n  C:\\Users\\Administrator\\Desktop\\�ĵ�\\��ѧ������Ҫ�����ʴ���\\���Ŀ���\\����\\��������V2.0\\backend\\app\\api\\platform.py:154: DeprecationWarning: datetime.datetime.utcnow() is deprecated and scheduled for removal in a future version. Use timezone-aware objects to represent datetimes in UTC: datetime.datetime.now(datetime.UTC).\n    sections[\"_ai_enhancement_started_at\"] = datetime.utcnow().isoformat()\n\ntests/test_batch_service.py::test_batch_to_response_includes_skipped_count\n  C:\\Users\\Administrator\\Desktop\\��ѧ������Ҫ�����ʴ���\\���Ŀ���\\����\\��������V2.0\\backend\\tests\\test_batch_service.py:44: DeprecationWarning: datetime.datetime.utcnow() is deprecated and scheduled for removal in a future version. Use timezone-aware objects to represent datetimes in UTC: datetime.datetime.now(datetime.UTC).\n\ntests/test_platform.py: 20 warnings\ntests/test_teacher_records.py: 2 warnings\n  C:\\Users\\Administrator\\Desktop\\�ĵ�\\��ѧ������Ҫ�����ʴ���\\���Ŀ���\\����\\��������V2.0\\backend\\.venv\\Lib\\site-packages\\starlette\\testclient.py:484: DeprecationWarning: Setting per-request cookies=<...> is being deprecated, because the expected behaviour on cookie persistence is ambiguous. Set cookies directly on the client instance instead.\n    return super().request(\n\n-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html\n122 passed, 122 warnings in 18.68s"
+  },
+  "input_fingerprint": "97a6be7dc026",
+  "holdout": {
+    "split": "test",
+    "cases": 6,
+    "groups_are_disjoint": true,
+    "model_training_status": "current weights were trained/fitted on the full 61-case source; this is a leakage-aware holdout baseline, not a final generalization result",
+    "rule_spearman": 0.5720775535473553,
+    "semantic_spearman": 0.7356123579206245,
+    "semantic_primary_spearman": 0.9379580992210836
+  }
+}

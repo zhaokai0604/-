@@ -1,0 +1,171 @@
+{
+  "version": 1,
+  "experiment": "platform_acceptance_only",
+  "generated_at": "2026-08-04T00:41:10",
+  "corpus_files": 33,
+  "corpus_scope": "本地离线只读文档；只写出聚合指标，不进入平台业务数据、不用于模型训练",
+  "model_policy": "frozen_inference_only_no_fit_no_alpha",
+  "functional": {
+    "synthetic_parse": {
+      "cases": 20,
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1": 1.0,
+      "exact_case_rate": 1.0
+    },
+    "pipeline_smoke": {
+      "returncode": 0,
+      "duration_ms": 1176.83,
+      "tail": "=== �Ż���·��֤ ===\n�ܷ�: 54.8\n֤�����Ŷ�: 0.52\n���������: 2\n������ʾ: 5\n�Ż���Ķ�: 3\nDOCX: C:\\Users\\Administrator\\Desktop\\�ĵ�\\��ѧ������Ҫ�����ʴ���\\���Ŀ���\\����\\��������V2.0\\data\\reports\\rewrite_999001.docx (37634 bytes)\n[OK] total_score\n[OK] has_scores\n[OK] has_optimized\n[OK] has_diffs\n[OK] has_skill_hints\n[OK] has_low_snr_or_confidence\n[OK] rewrite_mode\n[OK] docx_exists\nALL CHECKS PASSED\n\nBuilding prefix dict from the default dictionary ...\nLoading model from cache C:\\Users\\Administrator\\AppData\\Local\\Temp\\jieba.cache\nLoading model cost 0.358 seconds.\nPrefix dict has been built successfully."
+    }
+  },
+  "guardrail": {
+    "cases": 4,
+    "false_positive_rate": 0.0,
+    "violation_detection_rate": 1.0,
+    "unknown_safe_rate": 1.0,
+    "rows": [
+      {
+        "expected": "pass",
+        "observed": "pass"
+      },
+      {
+        "expected": "fail",
+        "observed": "fail"
+      },
+      {
+        "expected": "fail",
+        "observed": "fail"
+      },
+      {
+        "expected": "unknown",
+        "observed": "unknown"
+      }
+    ]
+  },
+  "real_corpus": {
+    "files": 33,
+    "baseline_no_ocr": {
+      "docx": 33,
+      "pdf": 0,
+      "text_ok": 33,
+      "text_empty": 0,
+      "total": 33,
+      "text_rate": 1.0
+    },
+    "improved_ocr": {
+      "docx": 33,
+      "pdf": 0,
+      "text_ok": 33,
+      "text_empty": 0,
+      "total": 33,
+      "text_rate": 1.0
+    },
+    "analysis_success": 33,
+    "analysis_rate": 1.0,
+    "quality_pass": 33,
+    "quality_pass_rate": 1.0,
+    "quality_counts": {
+      "high": 31,
+      "medium": 2
+    },
+    "analysis_timing": {
+      "count": 33,
+      "p95_ms": 227.71
+    },
+    "failure_types": []
+  },
+  "performance": {
+    "sample_type": "docx",
+    "warmup_ms": 171.81,
+    "baseline": {
+      "count": 10,
+      "mean_ms": 166.2,
+      "p50_ms": 165.27,
+      "p95_ms": 172.87,
+      "min_ms": 160.17,
+      "max_ms": 172.87
+    },
+    "pressure_20": {
+      "count": 20,
+      "mean_ms": 162.68,
+      "p50_ms": 163.13,
+      "p95_ms": 171.64,
+      "min_ms": 152.78,
+      "max_ms": 172.32
+    },
+    "capacity": {
+      "1": {
+        "requested": 1,
+        "completed": 1,
+        "wall_ms": 159.91
+      },
+      "5": {
+        "requested": 5,
+        "completed": 5,
+        "wall_ms": 843.64
+      },
+      "10": {
+        "requested": 10,
+        "completed": 10,
+        "wall_ms": 1638.57
+      },
+      "20": {
+        "requested": 20,
+        "completed": 20,
+        "wall_ms": 3366.27
+      }
+    },
+    "concurrency": {
+      "2": {
+        "workers": 2,
+        "success": 2,
+        "failures": 0,
+        "wall_ms": 319.38,
+        "task_timing": {
+          "count": 2,
+          "mean_ms": 313.95,
+          "p50_ms": 309.23,
+          "p95_ms": 318.67,
+          "min_ms": 309.23,
+          "max_ms": 318.67
+        }
+      },
+      "4": {
+        "workers": 4,
+        "success": 4,
+        "failures": 0,
+        "wall_ms": 588.25,
+        "task_timing": {
+          "count": 4,
+          "mean_ms": 573.63,
+          "p50_ms": 575.71,
+          "p95_ms": 587.41,
+          "min_ms": 557.94,
+          "max_ms": 587.41
+        }
+      },
+      "8": {
+        "workers": 8,
+        "success": 8,
+        "failures": 0,
+        "wall_ms": 1083.32,
+        "task_timing": {
+          "count": 8,
+          "mean_ms": 1028.32,
+          "p50_ms": 1041.35,
+          "p95_ms": 1077.36,
+          "min_ms": 970.06,
+          "max_ms": 1077.36
+        }
+      }
+    }
+  },
+  "duration_ms": 27267.51,
+  "excluded": [
+    "match_cases.json",
+    "train_sbert.py",
+    "train_biencoder.py",
+    "alpha fitting"
+  ]
+}

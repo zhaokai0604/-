@@ -99,11 +99,11 @@ def job_profile_payload(profile: JobProfile) -> dict[str, Any]:
 
 def mode_label(mode: str) -> str:
     labels = {
-        "ai_first": "快速规则分析",
-        "core": "快速规则分析",
-        "deepseek": "AI 深度优化已完成",
-        "offline_fallback": "快速规则分析",
-        "offline": "快速规则分析",
+        "ai_first": "规则分析",
+        "core": "规则分析",
+        "deepseek": "增强分析已完成",
+        "offline_fallback": "规则分析",
+        "offline": "规则分析",
     }
     return labels.get(mode, mode)
 
@@ -120,9 +120,9 @@ def public_analysis_mode_label(
     status = str(sections.get("_ai_enhancement_status") or ai_enhancement_status or "")
     if requested:
         if mode == "deepseek" or status == "success":
-            return "AI 深度优化已完成"
+            return "增强分析已完成"
         if status in {"pending", "processing"}:
-            return "AI 深度优化中"
+            return "增强分析进行中"
         return mode_label(mode)
     return mode_label(mode)
 
@@ -137,3 +137,12 @@ def batch_status_label(status: str) -> str:
         "failed": "处理失败",
     }
     return labels.get(status, status)
+
+
+def task_type_label(task_type: str) -> str:
+    labels = {
+        "batch_analysis": "批量分析",
+        "single_analysis": "单份分析",
+    }
+    return labels.get(task_type, task_type or "分析任务")
+

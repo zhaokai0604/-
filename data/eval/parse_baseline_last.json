@@ -1,0 +1,48 @@
+{
+  "cases": 20,
+  "micro_precision": 0.971,
+  "micro_recall": 0.971,
+  "micro_f1": 0.971,
+  "per_section": {
+    "awards": {
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1": 1.0
+    },
+    "basic_info": {
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1": 1.0
+    },
+    "campus": {
+      "precision": 0.75,
+      "recall": 1.0,
+      "f1": 0.8571
+    },
+    "education": {
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1": 1.0
+    },
+    "internship": {
+      "precision": 1.0,
+      "recall": 0.8182,
+      "f1": 0.9
+    },
+    "projects": {
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1": 1.0
+    },
+    "skills": {
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1": 1.0
+    },
+    "summary": {
+      "precision": 0.5,
+      "recall": 1.0,
+      "f1": 0.6667
+    }
+  }
+}

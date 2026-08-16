@@ -18,19 +18,19 @@ const platform = usePlatform()
     <section class="dashboard-hero">
       <div class="dashboard-hero-copy">
         <div class="hero-top-row">
-          <span class="subtle-pill">AI 驱动 · 简历分析</span>
+          <span class="subtle-pill">就业数据治理闭环</span>
           <div class="hero-stat-chips">
             <span><History :size="13" /> {{ platform.historyCount }}</span>
             <span><Download :size="13" /> {{ platform.reportCount }}</span>
           </div>
         </div>
-        <h3>让每一份简历<br />都更接近目标岗位</h3>
-        <p>上传简历，智能评分、诊断问题、匹配岗位，导出专业分析报告。</p>
+        <h3>从个人诊断到班级洞察<br />再到岗位与简历质量沉淀</h3>
+        <p>学生获得诊断与修改建议，教师看见班级共性问题，学校沉淀岗位需求与简历质量数据。</p>
         <div class="hero-feature-row">
-          <span class="hero-feature-pill"><FileText :size="14" />智能解析</span>
-          <span class="hero-feature-pill"><BriefcaseBusiness :size="14" />岗位匹配</span>
-          <span class="hero-feature-pill"><Download :size="14" />报告导出</span>
-          <span class="hero-feature-pill"><FileText :size="14" />模拟面试</span>
+          <span class="hero-feature-pill"><FileText :size="14" />学生诊断</span>
+          <span class="hero-feature-pill"><BriefcaseBusiness :size="14" />岗位适配</span>
+          <span class="hero-feature-pill"><History :size="14" />班级洞察</span>
+          <span class="hero-feature-pill"><Download :size="14" />报告沉淀</span>
         </div>
         <div class="panel-actions">
           <button class="primary-action hero-cta" @click="platform.setActiveTab('single')">
@@ -95,33 +95,33 @@ const platform = usePlatform()
     <section class="journey-grid platform-workflow">
       <article class="journey-card">
         <span class="journey-step">01</span>
-        <strong>注册登录</strong>
-        <p>进入个人工作台，数据按账号隔离保存。</p>
+        <strong>学生上传简历</strong>
+        <p>完成结构化解析，沉淀可复用的简历资产。</p>
       </article>
       <article class="journey-card">
         <span class="journey-step">02</span>
-        <strong>上传主简历</strong>
-        <p>完成结构化解析，沉淀简历资产。</p>
+        <strong>对接岗位要求</strong>
+        <p>选用岗位模板或公开岗位库，明确适配依据。</p>
       </article>
       <article class="journey-card">
         <span class="journey-step">03</span>
-        <strong>选择岗位 JD</strong>
-        <p>从岗位库选择或粘贴 JD，发起匹配分析。</p>
+        <strong>诊断与修改建议</strong>
+        <p>多维评分、证据匹配与可执行修改建议。</p>
       </article>
       <article class="journey-card">
         <span class="journey-step">04</span>
-        <strong>查看评分诊断</strong>
-        <p>获取多维评分、证据匹配与修改建议。</p>
+        <strong>优化稿与面试训练</strong>
+        <p>依据材料补强表达，并生成模拟面试题。</p>
       </article>
       <article class="journey-card">
         <span class="journey-step">05</span>
-        <strong>优化与面试</strong>
-        <p>AI 改写、模板推荐、模拟面试与语音练习。</p>
+        <strong>教师班级洞察</strong>
+        <p>汇总共性问题、热门岗位与评分分布。</p>
       </article>
       <article class="journey-card">
         <span class="journey-step">06</span>
-        <strong>报告与任务</strong>
-        <p>导出 Word/PDF，批量任务在任务中心追踪。</p>
+        <strong>学校数据沉淀</strong>
+        <p>岗位需求与简历质量数据持续沉淀，服务就业治理。</p>
       </article>
     </section>
 
@@ -146,14 +146,14 @@ const platform = usePlatform()
         <div class="panel-heading">
           <div>
             <h3>平台能力</h3>
-            <p class="panel-subtitle">从上传到导出，覆盖简历分析全流程。</p>
+            <p class="panel-subtitle">围绕就业数据治理，覆盖学生、教师与学校三类使用场景。</p>
           </div>
         </div>
         <div class="roadmap-list">
-          <div><strong>01</strong><span>历史记录持久保存，支持随时回看、对比与导出。</span></div>
-          <div><strong>02</strong><span>岗位模板一键复用，无需每次重新填写 JD。</span></div>
-          <div><strong>03</strong><span>多格式报告导出，便于修改简历与面试准备。</span></div>
-          <div><strong>04</strong><span>账号数据隔离，分析记录安全可靠。</span></div>
+          <div><strong>01</strong><span>学生端：诊断问题、给出修改建议与优化稿。</span></div>
+          <div><strong>02</strong><span>教师端：班级共性问题、均分与热门岗位洞察。</span></div>
+          <div><strong>03</strong><span>学校侧：岗位需求与简历质量数据可沉淀、可复盘。</span></div>
+          <div><strong>04</strong><span>分析可信度提示：证据不足时主动降置信，不盲目高分。</span></div>
         </div>
       </div>
 

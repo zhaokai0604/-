@@ -1,0 +1,7 @@
+# 可选语义向量依赖（CPU）。主 requirements.txt 不含 torch，避免默认安装过重。
+# 安装：
+#   .\.venv\Scripts\python.exe -m pip install torch --index-url https://download.pytorch.org/whl/cpu
+#   .\.venv\Scripts\python.exe -m pip install -r requirements-semantic.txt
+sentence-transformers>=3.0.0
+datasets>=2.19.0
+accelerate>=1.1.0

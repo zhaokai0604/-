@@ -22,18 +22,26 @@ const platform = usePlatform()
         <span>压缩包内可包含多份 Word / PDF 简历</span>
       </label>
 
-      <JobProfileFields
-        :model-value="platform.selectedJobProfileKey"
-        :target-position="platform.targetPosition"
-        :job-description="platform.jobDescription"
-        :profiles="platform.jobProfileOptions"
-        :presets="platform.jobProfilePresetOptions"
-        :textarea-rows="8"
-        @update:model-value="(value) => { platform.handleJobProfileChange(value) }"
-        @update:target-position="(value) => { platform.targetPosition = value }"
-        @update:job-description="(value) => { platform.jobDescription = value }"
-      />
+      <label class="switch-row target-match-switch">
+        <input :checked="platform.enableTargetMatch" type="checkbox" @change="platform.setTargetMatchEnabled($event.target.checked)" />
+        <span>指定目标岗位后再匹配（默认关闭）</span>
+      </label>
 
+      <section v-if="platform.enableTargetMatch" class="target-match-panel">
+        <JobProfileFields
+          :model-value="platform.selectedJobProfileKey"
+          :target-position="platform.targetPosition"
+          :job-description="platform.jobDescription"
+          :profiles="platform.jobProfileOptions"
+          :presets="platform.jobProfilePresetOptions"
+          :textarea-rows="8"
+          @update:model-value="(value) => { platform.handleJobProfileChange(value) }"
+          @update:target-position="(value) => { platform.targetPosition = value }"
+          @update:job-description="(value) => { platform.jobDescription = value }"
+          @clear="platform.clearTargetJobInputs"
+        />
+      </section>
+      <p v-else class="muted-cell target-match-hint">当前批量任务不会套用目标岗，仅做通用分析。</p>
       <button class="primary-action" :disabled="platform.loading || platform.batchTaskRunning">
         <Archive :size="18" />
         {{ platform.loading ? '正在提交批量任务' : platform.batchTaskRunning ? '后台任务处理中' : '开始批量分析' }}

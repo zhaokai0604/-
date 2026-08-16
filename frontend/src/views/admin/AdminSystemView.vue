@@ -13,7 +13,7 @@ const platform = usePlatform()
     <section class="panel">
       <div class="panel-heading">
         <div>
-          <h3>大模型配置</h3>
+          <h3>增强分析配置</h3>
           <p class="panel-subtitle">修改系统默认增强分析模型，保存后新的分析任务会立即使用。</p>
         </div>
         <button class="secondary-action" :disabled="platform.adminLoading" @click="platform.saveAiConfig">
@@ -99,7 +99,7 @@ const platform = usePlatform()
       <div class="panel-heading">
         <div>
           <h3>评分权重模板</h3>
-          <p class="panel-subtitle">按岗位类型切换评分维度权重（阶段二能力）。</p>
+          <p class="panel-subtitle">按岗位类型切换评分维度权重。</p>
         </div>
         <button class="secondary-action" :disabled="platform.adminLoading" @click="platform.saveScoreConfig">
           保存模板

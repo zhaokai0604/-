@@ -1,10 +1,11 @@
 import base64
 import binascii
+import logging
 from pathlib import Path
 from typing import Any
 
 from fastapi import APIRouter, BackgroundTasks, Depends, File, Form, HTTPException, Request, UploadFile
-from fastapi.responses import FileResponse
+from fastapi.responses import FileResponse, StreamingResponse
 from sqlalchemy.orm import Session
 
 from app.api.actor import actor_guest_session_value, batch_owned_by_actor, record_owned_by_actor, resolve_actor, scope_batches, scope_records
@@ -21,7 +22,7 @@ from app.api.platform import (
     resume_media_type,
     retry_single_analysis,
 )
-from app.api.schemas import BulkDeleteHistoryRequest, DirectResumeAnalyzeRequest
+from app.api.schemas import ApplyRecommendedJobRequest, BulkDeleteHistoryRequest, DirectResumeAnalyzeRequest
 from app.api.task_dispatch import dispatch_batch_task, dispatch_single_analysis
 from app.core.config import settings
 from app.core.database import get_db
@@ -31,6 +32,7 @@ from app.tasks.celery_app import celery_enabled
 from app.utils.json_tools import dumps
 
 router = APIRouter()
+logger = logging.getLogger("uvicorn.error")
 
 
 @router.get("/resume-templates/catalog")
@@ -62,8 +64,10 @@ def health(db: Session = Depends(get_db)) -> dict[str, str]:
             redis_status = "error"
 
     worker_status = "celery" if celery_enabled() else "background_tasks"
+    # 数据库挂了才算整体异常；Redis 仅在启用 Celery 时影响健康度。
+    # 本地 USE_CELERY=false 时走进程内后台，Redis 连不上不应把「后端」标成异常。
     overall = "ok" if db_status == "ok" else "degraded"
-    if redis_status == "error":
+    if redis_status == "error" and celery_enabled():
         overall = "degraded"
 
     return {
@@ -84,14 +88,24 @@ async def analyze_single(
     target_position: str = Form(""),
     job_description: str = Form(""),
     job_profile_id: int = Form(0),
+    target_match_enabled: bool = Form(False),
     enable_ai: bool = Form(True),
     parent_record_id: int = Form(0),
+    stream: bool = Form(False),
     db: Session = Depends(get_db),
 ) -> dict[str, Any]:
     content = await file.read()
     validate_upload(file.filename or "", len(content), allow_zip=False)
     stored_path = save_upload_bytes(content, file.filename or "")
     actor = resolve_actor(request, db)
+    logger.info(
+        "analysis_request endpoint=upload stream=%s target_match_enabled=%s target_position_present=%s jd_length=%s profile_id=%s",
+        bool(stream),
+        bool(target_match_enabled),
+        bool(target_position.strip()),
+        len(job_description.strip()),
+        job_profile_id if target_match_enabled else 0,
+    )
     parent_id = parent_record_id if parent_record_id > 0 else None
     if parent_id:
         parent = db.query(AnalysisRecord).filter(AnalysisRecord.id == parent_id).first()
@@ -103,16 +117,21 @@ async def analyze_single(
             actor.user,
             stored_path,
             file.filename or stored_path.name,
-            target_position,
-            job_description,
+            target_position if target_match_enabled else "",
+            job_description if target_match_enabled else "",
             enable_ai,
-            job_profile_id=job_profile_id,
+            job_profile_id=job_profile_id if target_match_enabled else 0,
             guest_session_id=actor_guest_session_value(actor),
             parent_record_id=parent_id,
+            target_match_enabled=target_match_enabled,
+            stream=stream,
         )
-        dispatch_single_analysis(background_tasks, record.id)
+        # 流式任务由 analysis-live 认领，避免响应返回前后台任务抢先完成。
+        if not stream:
+            dispatch_single_analysis(background_tasks, record.id)
         payload = record_to_response(record, include_detail=False, db=db)
         payload["async"] = True
+        payload["stream"] = bool(stream)
         return payload
     except ValueError as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
@@ -136,6 +155,14 @@ async def analyze_single_direct(
     validate_upload(payload.filename or "", len(content), allow_zip=False)
     stored_path = save_upload_bytes(content, payload.filename or "")
     actor = resolve_actor(request, db)
+    logger.info(
+        "analysis_request endpoint=direct stream=%s target_match_enabled=%s target_position_present=%s jd_length=%s profile_id=%s",
+        bool(payload.stream),
+        bool(payload.target_match_enabled),
+        bool(payload.target_position.strip()),
+        len(payload.job_description.strip()),
+        payload.job_profile_id if payload.target_match_enabled else 0,
+    )
     parent_id = payload.parent_record_id if payload.parent_record_id > 0 else None
     if parent_id:
         parent = db.query(AnalysisRecord).filter(AnalysisRecord.id == parent_id).first()
@@ -147,16 +174,20 @@ async def analyze_single_direct(
             actor.user,
             stored_path,
             payload.filename or stored_path.name,
-            payload.target_position,
-            payload.job_description,
+            payload.target_position if payload.target_match_enabled else "",
+            payload.job_description if payload.target_match_enabled else "",
             payload.enable_ai,
-            job_profile_id=payload.job_profile_id,
+            job_profile_id=payload.job_profile_id if payload.target_match_enabled else 0,
             guest_session_id=actor_guest_session_value(actor),
             parent_record_id=parent_id,
+            target_match_enabled=payload.target_match_enabled,
+            stream=payload.stream,
         )
-        dispatch_single_analysis(background_tasks, record.id)
+        if not payload.stream:
+            dispatch_single_analysis(background_tasks, record.id)
         response = record_to_response(record, include_detail=False, db=db)
         response["async"] = True
+        response["stream"] = bool(payload.stream)
         return response
     except ValueError as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
@@ -170,6 +201,7 @@ async def analyze_zip(
     target_position: str = Form(""),
     job_description: str = Form(""),
     job_profile_id: int = Form(0),
+    target_match_enabled: bool = Form(False),
     enable_ai: bool = Form(True),
     db: Session = Depends(get_db),
 ) -> dict[str, Any]:
@@ -189,7 +221,10 @@ async def analyze_zip(
         response["reused"] = True
         return response
     zip_path = save_upload_bytes(content, file.filename or "")
-    resolved_profile = resolve_job_profile(db, actor, job_profile_id)
+    resolved_profile = resolve_job_profile(db, actor, job_profile_id) if target_match_enabled else None
+    if not target_match_enabled:
+        target_position = ""
+        job_description = ""
     normalized_target_position, normalized_job_description = resolve_job_inputs(target_position, job_description, resolved_profile)
     guest_session_id = actor_guest_session_value(actor)
     batch = BatchTask(
@@ -389,11 +424,84 @@ def refresh_interview_prep_route(
     return interview_prep
 
 
+@router.post("/history/{record_id}/apply-job")
+def apply_recommended_job_route(
+    record_id: int,
+    payload: ApplyRecommendedJobRequest,
+    request: Request,
+    db: Session = Depends(get_db),
+) -> dict[str, Any]:
+    """将推荐岗位设为分析目标，并重算该岗专属评价与匹配报告。"""
+    from app.api.platform import apply_recommended_job
+
+    actor = resolve_actor(request, db)
+    record = db.query(AnalysisRecord).filter(AnalysisRecord.id == record_id).first()
+    if not record or not record_owned_by_actor(record, actor):
+        raise HTTPException(status_code=404, detail="记录不存在。")
+    if record.status != "success":
+        raise HTTPException(status_code=400, detail="仅支持对已完成的分析记录切换岗位。")
+    if not (payload.job_id or payload.source_url or payload.target_position):
+        raise HTTPException(status_code=400, detail="请指定要应用的推荐岗位。")
+    return apply_recommended_job(
+        record,
+        db,
+        job_id=payload.job_id,
+        source_url=payload.source_url,
+        target_position=payload.target_position,
+    )
+
+
 @router.get("/history/{record_id}/rewrite-report")
 def download_rewrite_report(record_id: int, request: Request, db: Session = Depends(get_db)):
     from app.api.platform import download_rewrite_report_file
 
     return download_rewrite_report_file(record_id, request, db)
+
+
+@router.get("/history/{record_id}/analysis-stream")
+def replay_analysis_stream(record_id: int, request: Request, db: Session = Depends(get_db)):
+    """SSE：重放真实分析结果的「实时解析流」（用于演示智能体阅读过程）。"""
+    from app.api.platform import record_to_response
+    from app.services.analysis_replay import iter_replay_events
+
+    actor = resolve_actor(request, db)
+    record = db.query(AnalysisRecord).filter(AnalysisRecord.id == record_id).first()
+    if not record or not record_owned_by_actor(record, actor):
+        raise HTTPException(status_code=404, detail="记录不存在。")
+    if record.status != "success":
+        raise HTTPException(status_code=400, detail="仅支持对已完成的分析重放解析流。")
+    payload = record_to_response(record, include_detail=True, db=db)
+    return StreamingResponse(
+        iter_replay_events(payload),
+        media_type="text/event-stream",
+        headers={
+            "Cache-Control": "no-cache",
+            "Connection": "keep-alive",
+            "X-Accel-Buffering": "no",
+        },
+    )
+
+
+@router.get("/history/{record_id}/analysis-live")
+def live_analysis_stream(record_id: int, request: Request, db: Session = Depends(get_db)):
+    """SSE：上传后真实跑 pipeline，边推事件边在 done 时落库。"""
+    from app.services.analysis_stream import iter_live_analysis_and_persist
+
+    actor = resolve_actor(request, db)
+    record = db.query(AnalysisRecord).filter(AnalysisRecord.id == record_id).first()
+    if not record or not record_owned_by_actor(record, actor):
+        raise HTTPException(status_code=404, detail="记录不存在。")
+    if record.status not in {"processing", "success"}:
+        raise HTTPException(status_code=400, detail="当前状态不支持实时分析流。")
+    return StreamingResponse(
+        iter_live_analysis_and_persist(record_id),
+        media_type="text/event-stream",
+        headers={
+            "Cache-Control": "no-cache",
+            "Connection": "keep-alive",
+            "X-Accel-Buffering": "no",
+        },
+    )
 
 
 @router.get("/batch-tasks/{batch_task_id}")
@@ -478,4 +586,10 @@ def download_source_resume(record_id: int, request: Request, db: Session = Depen
     if not path.exists():
         raise HTTPException(status_code=404, detail="原始简历文件不存在。")
     media_type = resume_media_type(path.suffix.lower())
-    return FileResponse(path, media_type=media_type, filename=path.name, content_disposition_type="inline")
+    # 原始文件属于用户私有材料：允许下载，但使用用户上传时的文件名，避免暴露服务器 UUID。
+    return FileResponse(
+        path,
+        media_type=media_type,
+        filename=source_file.original_filename or path.name,
+        content_disposition_type="attachment",
+    )

@@ -1,0 +1,9 @@
+{
+  "split": "test",
+  "cases": 6,
+  "groups_are_disjoint": true,
+  "model_training_status": "current weights were trained/fitted on the full 61-case source; this is a leakage-aware holdout baseline, not a final generalization result",
+  "rule_spearman": 0.5720775535473553,
+  "semantic_spearman": 0.7356123579206245,
+  "semantic_primary_spearman": 0.9379580992210836
+}

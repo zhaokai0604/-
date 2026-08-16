@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import re
 from typing import Any
 
 from app.services.score_engine import SECTION_LABELS, label_for_score
@@ -113,7 +114,8 @@ def build_structured_suggestions(
     if _is_new_media_context(match_result, evidence):
         _append_new_media_structured(items, evidence, target_label)
 
-    for line in evidence.get("weak_experience_lines", [])[:2]:
+    weak_lines = _unique_texts(evidence.get("weak_experience_lines", []))
+    for line in weak_lines[:2]:
         sample = _shorten(line, 40)
         items.append(
             {
@@ -181,6 +183,7 @@ def build_structured_suggestions(
                 }
             )
 
+    items = _dedupe_structured(items)
     return items[:8] or [
         {
             "problem": "整体结构较完整",
@@ -358,3 +361,27 @@ def _shorten(text: str, limit: int = 46) -> str:
 
 def _unique(items: list[str]) -> list[str]:
     return list(dict.fromkeys(item for item in items if item))
+
+
+def _unique_texts(items: Any) -> list[str]:
+    """按展示文本去重，避免重复解析行生成重复建议。"""
+    result: list[str] = []
+    seen: set[str] = set()
+    for item in items or []:
+        text = re.sub(r"\s+", " ", str(item).strip())
+        if text and text not in seen:
+            result.append(text)
+            seen.add(text)
+    return result
+
+
+def _dedupe_structured(items: list[dict[str, str]]) -> list[dict[str, str]]:
+    result: list[dict[str, str]] = []
+    seen: set[tuple[str, ...]] = set()
+    for item in items:
+        key = tuple(re.sub(r"\s+", " ", str(item.get(field, "")).strip()) for field in ("problem", "evidence", "direction", "example"))
+        if key in seen:
+            continue
+        seen.add(key)
+        result.append(item)
+    return result

@@ -1,0 +1,8 @@
+{
+  "base_model": "shibing624/text2vec-base-chinese",
+  "epochs": 2,
+  "batch_size": 8,
+  "pairs": 61,
+  "loss": "CosineSimilarityLoss",
+  "output": "C:\\Users\\Administrator\\Desktop\\文档\\大学生数据要素素质大赛\\赵文凯组\\代码\\简历分析V2.0\\data\\models\\sbert-resume-match"
+}

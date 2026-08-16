@@ -1,10 +1,43 @@
 <script setup>
+import { computed, defineAsyncComponent, ref, watch } from 'vue'
 import { UploadCloud } from 'lucide-vue-next'
 
 import JobProfileFields from '../components/JobProfileFields.vue'
 import { usePlatform } from '../stores/platform'
 
+const AnalysisLiveStream = defineAsyncComponent(() => import('../components/AnalysisLiveStream.vue'))
 const platform = usePlatform()
+
+const liveRecordId = ref(null)
+const showLive = computed(
+  () => Boolean(liveRecordId.value) && (platform.loading || platform.result?.status === 'processing' || platform.detailLoading),
+)
+
+watch(
+  () => platform.result,
+  (value) => {
+    if (value?.stream && value?.record_id && value?.status === 'processing') {
+      liveRecordId.value = value.record_id
+    }
+    if (value?.status === 'success' || value?.status === 'failed') {
+      // 保留流面板到用户离开前，不再强制清空
+    }
+  },
+  { deep: true },
+)
+
+async function onLiveDone() {
+  const id = liveRecordId.value || platform.result?.record_id
+  if (!id) return
+  platform.stopSinglePolling()
+  await platform.openRecordById(id)
+}
+
+function onLiveError() {
+  const id = liveRecordId.value || platform.result?.record_id
+  // 后台有约 12s 认领等待后的兜底执行，这里用轮询接住结果
+  if (id) platform.startSinglePolling(id)
+}
 </script>
 
 <template>
@@ -30,24 +63,47 @@ const platform = usePlatform()
         <span>支持 Word / PDF 格式，文件安全存储于本地</span>
       </label>
 
-      <JobProfileFields
-        :model-value="platform.selectedJobProfileKey"
-        :target-position="platform.targetPosition"
-        :job-description="platform.jobDescription"
-        :profiles="platform.jobProfileOptions"
-        :presets="platform.jobProfilePresetOptions"
-        @update:model-value="(value) => { platform.handleJobProfileChange(value) }"
-        @update:target-position="(value) => { platform.targetPosition = value }"
-        @update:job-description="(value) => { platform.jobDescription = value }"
-      />
+      <label class="switch-row target-match-switch">
+        <input :checked="platform.enableTargetMatch" type="checkbox" @change="platform.setTargetMatchEnabled($event.target.checked)" />
+        <span>指定目标岗位后再匹配（默认关闭：只做通用分析，下方推荐岗可点选）</span>
+      </label>
+
+      <section v-if="platform.enableTargetMatch" class="target-match-panel">
+        <p v-if="platform.targetPosition" class="target-match-banner">
+          将按「{{ platform.targetPosition }}」做岗位匹配。不想套岗请关闭上方开关或点清空。
+        </p>
+        <JobProfileFields
+          :model-value="platform.selectedJobProfileKey"
+          :target-position="platform.targetPosition"
+          :job-description="platform.jobDescription"
+          :profiles="platform.jobProfileOptions"
+          :presets="platform.jobProfilePresetOptions"
+          @update:model-value="(value) => { platform.handleJobProfileChange(value) }"
+          @update:target-position="(value) => { platform.targetPosition = value }"
+          @update:job-description="(value) => { platform.jobDescription = value }"
+          @clear="platform.clearTargetJobInputs"
+        />
+      </section>
+      <p v-else class="muted-cell target-match-hint">
+        当前不会采用任何目标岗。分析完成后可在结果页从推荐列表点选岗位查看专属评价。
+      </p>
 
       <div class="submit-row">
         <button class="primary-action" :disabled="platform.loading">
           <UploadCloud :size="18" />
           {{ platform.loading ? '分析中…' : platform.parentRecordId ? '分析新版本' : '开始分析' }}
         </button>
-        <span>{{ platform.enableAi ? '约 5 秒先出基础分析，AI 优化后台补齐' : '当前使用规则引擎分析' }}</span>
+        <span>{{ platform.enableAi ? '实时推送分析事件并落库，增强分析后台补齐' : '当前使用规则引擎实时分析并落库' }}</span>
       </div>
+
+      <AnalysisLiveStream
+        v-if="showLive"
+        :record-id="liveRecordId"
+        :live="true"
+        :auto-play="true"
+        @done="onLiveDone"
+        @error="onLiveError"
+      />
     </form>
 
     <aside class="context-panel">
@@ -56,10 +112,11 @@ const platform = usePlatform()
         <strong>您将获得</strong>
         <ul class="clean-list soft-list">
           <li>综合评分与各维度分项得分</li>
-          <li>岗位匹配度、关键词覆盖与缺失项</li>
-          <li>约 5 秒生成基础诊断、修改建议与规则改写参考</li>
-          <li>开启 AI 时，深度诊断与改写会在后台自动补齐</li>
-          <li>简历模板推荐与优化稿导出</li>
+          <li>未填目标岗：通用分析 + 相似岗位推荐（点击后再出该岗评价）</li>
+          <li>已填目标岗：按意向岗位做匹配度与缺失项分析</li>
+          <li>上传后实时推送阅读/匹配事件，完成后直接落库</li>
+          <li>在初稿上打磨出可下载优化稿</li>
+          <li>开启增强分析时，诊断与优化稿会在后台自动加深</li>
           <li>Word / PDF 评价报告一键导出</li>
         </ul>
       </section>
@@ -77,20 +134,6 @@ const platform = usePlatform()
         <span class="guide-kicker">版本管理</span>
         <strong>新版本说明</strong>
         <p>上传修改后的简历将自动成为 v{{ (platform.result?.version_no || 1) + 1 }}，可在详情页查看版本时间线并对比得分变化。</p>
-      </section>
-      <section class="compact-card single-guide-card">
-        <span class="guide-kicker">使用建议</span>
-        <strong>推荐流程</strong>
-        <ul class="clean-list soft-list">
-          <li>先上传主简历，再填写目标岗位</li>
-          <li>重点关注缺失关键词与诊断与优化建议</li>
-          <li>确认结果后导出报告，指导修改方向</li>
-        </ul>
-      </section>
-      <section class="compact-card single-guide-card">
-        <span class="guide-kicker">隐私保护</span>
-        <strong>数据安全</strong>
-        <p>简历文件仅存储在本地，删除记录时同步清理。开启 AI 时先展示基础分析，智能诊断与改写稍后自动更新。</p>
       </section>
     </aside>
   </section>

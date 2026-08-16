@@ -31,9 +31,9 @@
 | 3 | 前端页面视图数 | 15 个 `.vue` 页面视图 | `frontend/src/views` 递归统计 |
 | 4 | 应用路由总数 | 58 条 FastAPI 路由 | 通过 `app.main:app` 载入后统计 |
 | 5 | 测试文件数 | 17 个 `test_*.py` 文件 | `backend/tests` 目录统计 |
-| 6 | 测试函数数 | 68 个 `test_` 测试函数 | 代码正则统计 |
-| 7 | 最新后端测试结果 | `68 passed, 101 warnings in 5.88s` | 2026-06-30 本机执行 `backend\\.venv\\Scripts\\pytest.exe backend/tests -q` |
-| 8 | 前端构建结果 | Vite 构建成功，`2158 modules transformed`，产出 `dist/` 目录 | 2026-06-30 本机执行 `npm run build` |
+| 6 | 测试函数数 | 107 个 `test_` 测试函数 | 代码正则统计（2026-08-03） |
+| 7 | 最新后端测试结果 | `107 passed, 122 warnings` | 2026-08-03 本机执行 `backend\\.venv\\Scripts\\python.exe -m pytest tests -q` |
+| 8 | 前端构建结果 | Vite 构建成功，`2161 modules transformed`，产出 `dist/` 目录 | 2026-08-03 本机执行 `npm run build` |
 
 ## 四、正文写作约束
 

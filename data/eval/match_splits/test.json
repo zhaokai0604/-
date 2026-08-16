@@ -1,0 +1,47 @@
+{
+  "version": 1,
+  "cases": [
+    {
+      "id": "research-lab",
+      "resume": "实验室助手：文献调研与实验记录整理。",
+      "job": "科研助理，要求文献、实验记录",
+      "label": 3,
+      "note": "科研"
+    },
+    {
+      "id": "sale-intern",
+      "resume": "电话销售实习，日均有效沟通 20 通，成交 3 单。",
+      "job": "销售专员，要求沟通、成交、抗压",
+      "label": 4,
+      "note": "销售"
+    },
+    {
+      "id": "sale-vs-fe",
+      "resume": "地推与客户维护。",
+      "job": "前端开发，要求 Vue",
+      "label": 1,
+      "note": "跨岗"
+    },
+    {
+      "id": "teach-assist",
+      "resume": "高等数学助教，整理题库并答疑 40+ 人次。",
+      "job": "教育辅导/助教，要求讲解、耐心、总结",
+      "label": 3,
+      "note": "教辅"
+    },
+    {
+      "id": "video-pr",
+      "resume": "Premiere 剪辑宣传片，交付 15 条成片。",
+      "job": "影视后期，要求 PR、剪辑、包装",
+      "label": 5,
+      "note": "剪辑"
+    },
+    {
+      "id": "video-vs-da",
+      "resume": "AE 做片头包装。",
+      "job": "数据分析师，要求 SQL",
+      "label": 1,
+      "note": "跨岗"
+    }
+  ]
+}

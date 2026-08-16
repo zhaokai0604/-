@@ -23,6 +23,9 @@ def _sample_parsed() -> dict:
 def test_score_resume_returns_expected_dimensions():
     result = score_resume(_sample_parsed(), "数据分析师", "熟悉 Python、SQL 和 Excel")
     assert 0 <= result["total_score"] <= 100
+    assert 0 <= result["evidence_coverage"] <= 1
+    assert result["layout_complexity"] == 0
+    assert "quality_warnings" in result
     for key in (
         "content_completeness",
         "experience_match",

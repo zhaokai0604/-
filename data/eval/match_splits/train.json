@@ -1,0 +1,313 @@
+{
+  "version": 1,
+  "cases": [
+    {
+      "id": "be-strong",
+      "resume": "后端项目：FastAPI 设计权限接口，MySQL 建模，Redis 缓存热点，完成部署。",
+      "job": "后端开发，要求 Python、接口、MySQL、Redis",
+      "label": 5,
+      "note": "后端强匹配"
+    },
+    {
+      "id": "be-keyword-miss-semantic-hit",
+      "resume": "服务端开发：完成用户中心 API，数据库读写分离与缓存加速。",
+      "job": "后端工程师，要求接口开发、MySQL、Redis",
+      "label": 4,
+      "note": "关键词少但语义近"
+    },
+    {
+      "id": "be-java",
+      "resume": "Java Spring Boot 订单服务，MyBatis 访问 MySQL。",
+      "job": "后端开发，要求 Java Spring MySQL",
+      "label": 5,
+      "note": "Java强"
+    },
+    {
+      "id": "be-docker",
+      "resume": "参与服务容器化，编写 Dockerfile 并协助部署。",
+      "job": "后端/运维，要求部署、Docker、接口",
+      "label": 3,
+      "note": "偏运维"
+    },
+    {
+      "id": "be-vs-da",
+      "resume": "Redis 缓存与接口限流优化。",
+      "job": "数据分析，要求 Python 可视化",
+      "label": 1,
+      "note": "跨岗"
+    },
+    {
+      "id": "be-mq",
+      "resume": "接入消息队列削峰，失败重试可观测。",
+      "job": "后端，要求消息队列、可靠性",
+      "label": 3,
+      "note": "MQ"
+    },
+    {
+      "id": "be-auth",
+      "resume": "实现 JWT 登录与权限中间件。",
+      "job": "后端，要求认证授权、接口安全",
+      "label": 4,
+      "note": "鉴权"
+    },
+    {
+      "id": "be-crud",
+      "resume": "完成增删改查接口，无高并发场景。",
+      "job": "后端，要求高并发与缓存",
+      "label": 2,
+      "note": "深度不足"
+    },
+    {
+      "id": "campus-org",
+      "resume": "学生会宣传部：策划迎新活动，覆盖 800 人。",
+      "job": "综合岗/管培，要求组织、宣传、执行",
+      "label": 3,
+      "note": "校园"
+    },
+    {
+      "id": "comp-award",
+      "resume": "获省级数学建模二等奖，负责建模与论文。",
+      "job": "数据分析/建模相关岗位",
+      "label": 4,
+      "note": "竞赛"
+    },
+    {
+      "id": "da-strong",
+      "resume": "实习经历：使用 Python 与 SQL 完成用户行为数据清洗，搭建 Tableau 看板，周活跃提升 12%。技能：Python、SQL、Excel、可视化。",
+      "job": "数据分析师，要求 Python、SQL、数据可视化、指标分析",
+      "label": 5,
+      "note": "强匹配"
+    },
+    {
+      "id": "da-synonym",
+      "resume": "项目：负责业务报表自动化，用 pandas 处理订单明细，并输出经营分析结论。",
+      "job": "数据分析师，要求 Python、SQL、数据可视化",
+      "label": 4,
+      "note": "同义表达（pandas≈Python）"
+    },
+    {
+      "id": "da-weak-metric",
+      "resume": "参与了很多数据分析相关工作，比较熟悉业务。",
+      "job": "数据分析师，要求 Python、SQL、可视化",
+      "label": 2,
+      "note": "相关但证据弱"
+    },
+    {
+      "id": "da-powerbi",
+      "resume": "实习：用 Power BI 做销售漏斗看板，梳理转化指标并周报复盘。",
+      "job": "数据分析，要求 PowerBI、指标、可视化",
+      "label": 4,
+      "note": "BI工具"
+    },
+    {
+      "id": "da-hive",
+      "resume": "项目：Hive SQL 汇总日志，输出留存与活跃报表。",
+      "job": "数据分析师，要求 SQL、数据仓库、报表",
+      "label": 4,
+      "note": "仓数近义"
+    },
+    {
+      "id": "da-vs-pm",
+      "resume": "简历：Python 建模与特征工程，AUC 提升 3%。",
+      "job": "产品经理，要求 PRD 原型需求",
+      "label": 1,
+      "note": "跨岗"
+    },
+    {
+      "id": "da-intern-mid",
+      "resume": "数据分析实习：协助清洗问卷数据，用 Excel 透视表统计。",
+      "job": "数据分析专员，要求 Excel、统计、报表",
+      "label": 3,
+      "note": "中等匹配"
+    },
+    {
+      "id": "da-abtest",
+      "resume": "参与 A/B 实验分析，输出显著性结论与建议。",
+      "job": "数据分析，要求实验、统计、指标",
+      "label": 4,
+      "note": "实验"
+    },
+    {
+      "id": "da-etl",
+      "resume": "编写定时 ETL 脚本，保证日报准时产出。",
+      "job": "数据开发/分析，要求 ETL、SQL、自动化",
+      "label": 4,
+      "note": "ETL"
+    },
+    {
+      "id": "da-sql-only",
+      "resume": "只会写基础 SELECT，无项目量化。",
+      "job": "高级数据分析，要求建模与实验",
+      "label": 2,
+      "note": "偏弱"
+    },
+    {
+      "id": "design-strong",
+      "resume": "电商美工：Photoshop 制作主图与详情页，上新 30 套，点击率提升 8%。",
+      "job": "电商美工，要求 PS、详情页、视觉转化",
+      "label": 5,
+      "note": "设计岗"
+    },
+    {
+      "id": "design-vs-frontend",
+      "resume": "平面设计：海报与品牌视觉物料制作。",
+      "job": "前端开发，要求 Vue JavaScript",
+      "label": 1,
+      "note": "跨岗"
+    },
+    {
+      "id": "design-ai",
+      "resume": "Illustrator 绘制图标与海报，服务店铺大促。",
+      "job": "视觉设计，要求 AI、海报、品牌",
+      "label": 4,
+      "note": "AI设计"
+    },
+    {
+      "id": "design-detail",
+      "resume": "详情页转化优化，加购率提升 6%。",
+      "job": "电商美工，要求详情页、转化",
+      "label": 5,
+      "note": "转化设计"
+    },
+    {
+      "id": "eng-cet",
+      "resume": "英语六级 520，可阅读技术文档。",
+      "job": "任何技术岗附加项",
+      "label": 2,
+      "note": "弱加分项单独"
+    },
+    {
+      "id": "excel-vs-vba",
+      "resume": "用 VBA 处理过十万行销售明细并自动生成周报。",
+      "job": "数据分析专员，要求 Excel 数据处理与报表",
+      "label": 4,
+      "note": "细粒度难负/近义"
+    },
+    {
+      "id": "fe-strong",
+      "resume": "前端开发实习：使用 Vue3 + TypeScript 完成后台管理组件，对接 REST 接口，优化首屏加载。",
+      "job": "前端开发工程师，熟悉 Vue/React、JavaScript、TypeScript、组件化",
+      "label": 5,
+      "note": "前端强匹配"
+    },
+    {
+      "id": "fe-vs-be",
+      "resume": "后端实习：Spring Boot 开发订单接口，MySQL 与 Redis 缓存优化。",
+      "job": "前端开发，要求 Vue、React、CSS",
+      "label": 1,
+      "note": "跨岗难负例"
+    },
+    {
+      "id": "fe-react",
+      "resume": "前端：React + Hooks 开发活动页，封装通用组件 12 个。",
+      "job": "前端工程师，要求 React、组件化、JavaScript",
+      "label": 5,
+      "note": "React强"
+    },
+    {
+      "id": "fe-css",
+      "resume": "负责页面样式还原与响应式适配，熟悉 HTML/CSS。",
+      "job": "前端开发，要求 HTML CSS 响应式",
+      "label": 4,
+      "note": "偏样式"
+    },
+    {
+      "id": "fe-vs-design",
+      "resume": "Vue 开发管理后台表格与表单。",
+      "job": "电商美工，要求 PS 详情页",
+      "label": 1,
+      "note": "跨岗"
+    },
+    {
+      "id": "fe-ts",
+      "resume": "TypeScript 重构旧项目，降低运行时错误。",
+      "job": "前端，要求 TypeScript、工程化",
+      "label": 4,
+      "note": "TS"
+    },
+    {
+      "id": "fe-webpack",
+      "resume": "优化打包体积，首屏减少 28%。",
+      "job": "前端性能优化，要求工程化、性能",
+      "label": 4,
+      "note": "性能"
+    },
+    {
+      "id": "fe-jquery",
+      "resume": "维护 jQuery 老页面，修缺陷。",
+      "job": "前端，要求 Vue/React 现代框架",
+      "label": 2,
+      "note": "技术栈偏旧"
+    },
+    {
+      "id": "finance-excel",
+      "resume": "财务实习：费用报销核对，Excel 做月度台账。",
+      "job": "财务助理，要求细心、Excel、台账",
+      "label": 4,
+      "note": "财务"
+    },
+    {
+      "id": "finance-vs-be",
+      "resume": "熟悉增值税发票入账流程。",
+      "job": "后端工程师，要求 Python",
+      "label": 1,
+      "note": "跨岗"
+    },
+    {
+      "id": "generic-poor",
+      "resume": "性格开朗，学习能力强，熟悉办公软件。",
+      "job": "Java 后端开发，要求 Spring、微服务",
+      "label": 1,
+      "note": "几乎不匹配"
+    },
+    {
+      "id": "hr-assist",
+      "resume": "招聘助理：筛选简历 200+，安排面试并写纪要。",
+      "job": "HR 助理，要求简历筛选、沟通、组织",
+      "label": 4,
+      "note": "人力"
+    },
+    {
+      "id": "hybrid-full",
+      "resume": "全栈：Vue 前端 + FastAPI 后端，MySQL 存储，独立上线校园二手平台，日活 120。",
+      "job": "全栈/后端/前端均可，要求项目闭环",
+      "label": 5,
+      "note": "综合强"
+    },
+    {
+      "id": "hybrid-partial",
+      "resume": "写过课程设计网站，功能较简单。",
+      "job": "全栈工程师，要求独立交付",
+      "label": 2,
+      "note": "偏弱综合"
+    },
+    {
+      "id": "media-strong",
+      "resume": "新媒体运营：小红书内容策划与排版，单篇阅读 2.3 万，涨粉 800，完成数据复盘。",
+      "job": "新媒体运营，要求小红书、文案、数据分析、涨粉",
+      "label": 5,
+      "note": "新媒体强匹配"
+    },
+    {
+      "id": "media-vs-da",
+      "resume": "新媒体运营：负责短视频剪辑与文案。",
+      "job": "数据分析师，要求 Python SQL 建模",
+      "label": 1,
+      "note": "跨岗"
+    },
+    {
+      "id": "media-script",
+      "resume": "撰写短视频脚本 20 条，平均点赞 1.2k。",
+      "job": "内容运营，要求脚本、文案、数据",
+      "label": 4,
+      "note": "脚本"
+    },
+    {
+      "id": "media-seo",
+      "resume": "负责站点 SEO 关键词布局与周报。",
+      "job": "运营，要求 SEO、内容、分析",
+      "label": 3,
+      "note": "SEO"
+    }
+  ]
+}

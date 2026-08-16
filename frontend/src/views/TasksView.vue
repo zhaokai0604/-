@@ -4,6 +4,20 @@ import { Archive, BarChart3, CheckCircle2, ClipboardList, PauseCircle, RefreshCw
 import { usePlatform } from '../stores/platform'
 
 const platform = usePlatform()
+
+function taskTypeLabel(task) {
+  const map = {
+    batch_analysis: '批量分析',
+    single_analysis: '单份分析',
+  }
+  if (task?.task_type && map[task.task_type]) return map[task.task_type]
+  const label = String(task?.task_type_label || '').trim()
+  // 兼容历史接口里被错误编码的中文标签
+  if (!label || /[鍗鎵嗘瀽]/.test(label)) {
+    return map[task?.task_type] || '分析任务'
+  }
+  return label
+}
 </script>
 
 <template>
@@ -54,7 +68,7 @@ const platform = usePlatform()
               class="clickable-row"
               @click="platform.openTask(task)"
             >
-              <td>{{ task.task_type_label }}</td>
+              <td>{{ taskTypeLabel(task) }}</td>
               <td>{{ task.filename }}</td>
               <td>
                 {{ task.target_position || task.job_profile?.target_position || '-' }}

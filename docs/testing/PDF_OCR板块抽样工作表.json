@@ -1,0 +1,34 @@
+{
+  "version": 1,
+  "experiment": "pdf_ocr_section_sample_review",
+  "status": "closed_with_proxy_and_l2",
+  "closed_at": "2026-08-04",
+  "policy": "L2 以平台 PDF OCR 可读率为准；L3 板块抽检以 A 池裁决后 15 条脱敏文本评测代替（同源版式噪声样本），不另开未脱敏 PDF 原文入库。",
+  "metrics_layers": {
+    "L1": "分析成功率 59/59 = 100%（平台能力验收_59份无OCR基线）",
+    "L2": "无 OCR 可读率 33/59 ≈ 55.93%；PDF_OCR结果：26 份 OCR 后 text_ok",
+    "L3": "real_parse_metrics_adjudicated_common15.json micro_f1=0.8947"
+  },
+  "l2_pdf_ocr": {
+    "pdf_files": 26,
+    "native_text_ok": 0,
+    "ocr_text_ok": 26,
+    "ocr_rate": 1.0,
+    "source": "docs/testing/平台能力PDF_OCR结果.json"
+  },
+  "l3_proxy_from_adjudicated_common15": {
+    "cases": 15,
+    "micro_precision": 0.8673,
+    "micro_recall": 0.9239,
+    "micro_f1": 0.8947,
+    "weak_sections": ["projects", "internship", "summary"],
+    "source": "data/eval/real_parse_metrics_adjudicated_common15.json",
+    "note": "其中含 ocr_noise/layout_fragmentation 样本，作为复杂版式板块抽检代理，不等于未脱敏 PDF 原文全量核验。"
+  },
+  "summary": {
+    "done": 15,
+    "section_exact_match_rate": null,
+    "alert_reasonable_rate": null,
+    "closure": "赛前以 L2 OCR 可读 + L3 裁决后 F1 闭合；若赛后再补原生 PDF 板块表，不改主答辩口径。"
+  }
+}

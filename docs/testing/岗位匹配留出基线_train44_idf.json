@@ -1,0 +1,9 @@
+{
+  "split": "test",
+  "cases": 6,
+  "groups_are_disjoint": true,
+  "model_training_status": "strict train-only IDF baseline; no SBERT fine-tuning was applied",
+  "rule_spearman": 0.5720775535473553,
+  "semantic_spearman": 0.9851843661437778,
+  "semantic_primary_spearman": 0.9534625892455922
+}

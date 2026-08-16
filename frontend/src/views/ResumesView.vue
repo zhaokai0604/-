@@ -89,6 +89,9 @@ onMounted(() => {
                   {{ platform.parseQualityLabel(record.parse_quality) }}
                 </span>
               </div>
+              <div v-if="record.score_reliability === 'layout_review'" class="muted-cell">
+                <span class="subtle-pill warn">版式需复核</span>
+              </div>
             </td>
             <td><span class="mode-tag" :class="platform.displayAnalysisModeClass(record)">{{ platform.displayAnalysisModeLabel(record) }}</span></td>
             <td>{{ platform.formatDateTime(record.created_at) }}</td>

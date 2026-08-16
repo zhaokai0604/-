@@ -18,12 +18,25 @@ __all__ = [
 ]
 
 
-def analyze_resume(parsed: dict[str, Any], target_position: str = "", job_description: str = "") -> dict[str, Any]:
+def analyze_resume(
+    parsed: dict[str, Any],
+    target_position: str = "",
+    job_description: str = "",
+    *,
+    target_source_override: str | None = None,
+    allow_detected: bool = True,
+) -> dict[str, Any]:
     from app.services.pipeline_utils import normalize_sections
 
     sections = normalize_sections(parsed.get("sections", {}))
     parsed = {**parsed, "sections": sections}
-    scored = score_resume(parsed, target_position, job_description)
+    scored = score_resume(
+        parsed,
+        target_position,
+        job_description,
+        target_source_override=target_source_override,
+        allow_detected=allow_detected,
+    )
     diagnosis = build_diagnosis(
         scored["scores"],
         sections,

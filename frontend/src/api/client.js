@@ -147,8 +147,10 @@ export async function analyzeResume(payload) {
       target_position: payload.targetPosition || '',
       job_description: payload.jobDescription || '',
       job_profile_id: Number(payload.jobProfileId || 0),
+      target_match_enabled: Boolean(payload.targetMatchEnabled),
       enable_ai: Boolean(payload.enableAi),
       parent_record_id: payload.parentRecordId ? Number(payload.parentRecordId) : 0,
+      stream: payload.stream !== false,
     }),
     timeoutMs: 180_000,
   })
@@ -160,6 +162,7 @@ export async function analyzeZip(payload) {
   form.append('target_position', payload.targetPosition || '')
   form.append('job_description', payload.jobDescription || '')
   form.append('job_profile_id', String(payload.jobProfileId || 0))
+  form.append('target_match_enabled', String(Boolean(payload.targetMatchEnabled)))
   form.append('enable_ai', String(Boolean(payload.enableAi)))
   return request('/resumes/analyze-zip', { method: 'POST', body: form, timeoutMs: 180_000 })
 }
@@ -170,6 +173,15 @@ export async function fetchJobProfiles() {
 
 export async function fetchJobProfilePresets() {
   return request('/job-profile-presets')
+}
+
+export async function fetchJobMarket(params = {}) {
+  const query = new URLSearchParams()
+  if (params.city) query.set('city', params.city)
+  if (params.category) query.set('category', params.category)
+  if (params.education) query.set('education', params.education)
+  const suffix = query.toString() ? `?${query.toString()}` : ''
+  return request(`/job-market${suffix}`)
 }
 
 export async function copyJobProfilePreset(id) {
@@ -244,6 +256,16 @@ export async function fetchTeacherStats() {
 
 export async function fetchTeacherClasses() {
   return request('/teacher/classes')
+}
+
+export async function createTeacherTrainingTask(payload) {
+  return request('/teacher/training-tasks', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(payload),
+  })
 }
 
 export async function fetchTeacherRecords() {
@@ -417,6 +439,11 @@ export function rewriteReportUrl(recordId) {
   return `${API_BASE}/history/${recordId}/rewrite-report`
 }
 
+export function analysisStreamUrl(recordId, { live = false } = {}) {
+  const suffix = live ? 'analysis-live' : 'analysis-stream'
+  return `${API_BASE}/history/${recordId}/${suffix}`
+}
+
 export async function retryHistoryAnalysis(id) {
   return request(`/history/${id}/retry`, { method: 'POST' })
 }
@@ -429,4 +456,19 @@ export async function refreshInterviewPrep(recordId, enableAi = false) {
 export async function refreshRewritePreview(recordId, enableAi = false) {
   const query = enableAi ? '?enable_ai=true' : ''
   return request(`/history/${recordId}/rewrite-preview/refresh${query}`, { method: 'POST' })
+}
+
+export async function applyRecommendedJob(recordId, { jobId = '', sourceUrl = '', targetPosition = '' } = {}) {
+  return request(`/history/${recordId}/apply-job`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      job_id: jobId || '',
+      source_url: sourceUrl || '',
+      target_position: targetPosition || '',
+    }),
+    timeoutMs: 120_000,
+  })
 }

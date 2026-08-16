@@ -1,0 +1,190 @@
+{
+  "nodes": [
+    {
+      "id": "data_analysis",
+      "name": "数据分析",
+      "aliases": ["数据分析", "数据分析师", "商业分析"],
+      "children": ["python", "sql", "excel", "tableau", "powerbi", "data_modeling", "visualization"]
+    },
+    {
+      "id": "python",
+      "name": "Python",
+      "aliases": ["python", "pandas", "numpy"],
+      "children": []
+    },
+    {
+      "id": "sql",
+      "name": "SQL",
+      "aliases": ["sql", "mysql", "postgresql", "hive"],
+      "children": []
+    },
+    {
+      "id": "excel",
+      "name": "Excel",
+      "aliases": ["excel", "vba", "透视表"],
+      "children": []
+    },
+    {
+      "id": "tableau",
+      "name": "Tableau",
+      "aliases": ["tableau"],
+      "children": []
+    },
+    {
+      "id": "powerbi",
+      "name": "Power BI",
+      "aliases": ["powerbi", "power bi"],
+      "children": []
+    },
+    {
+      "id": "data_modeling",
+      "name": "数据建模",
+      "aliases": ["数据建模", "建模", "指标口径"],
+      "children": []
+    },
+    {
+      "id": "visualization",
+      "name": "数据可视化",
+      "aliases": ["可视化", "图表", "看板"],
+      "children": []
+    },
+    {
+      "id": "frontend",
+      "name": "前端开发",
+      "aliases": ["前端", "前端开发", "web前端"],
+      "children": ["javascript", "typescript", "vue", "react", "html_css"]
+    },
+    {
+      "id": "javascript",
+      "name": "JavaScript",
+      "aliases": ["javascript", "js", "es6"],
+      "children": []
+    },
+    {
+      "id": "typescript",
+      "name": "TypeScript",
+      "aliases": ["typescript", "ts"],
+      "children": []
+    },
+    {
+      "id": "vue",
+      "name": "Vue",
+      "aliases": ["vue", "vue3", "vue.js"],
+      "children": []
+    },
+    {
+      "id": "react",
+      "name": "React",
+      "aliases": ["react", "react.js"],
+      "children": []
+    },
+    {
+      "id": "html_css",
+      "name": "HTML/CSS",
+      "aliases": ["html", "css", "响应式"],
+      "children": []
+    },
+    {
+      "id": "backend",
+      "name": "后端开发",
+      "aliases": ["后端", "后端开发", "服务端"],
+      "children": ["java", "python_backend", "mysql", "redis", "api_design"]
+    },
+    {
+      "id": "java",
+      "name": "Java",
+      "aliases": ["java", "spring", "springboot"],
+      "children": []
+    },
+    {
+      "id": "python_backend",
+      "name": "Python后端",
+      "aliases": ["fastapi", "django", "flask"],
+      "children": []
+    },
+    {
+      "id": "mysql",
+      "name": "MySQL",
+      "aliases": ["mysql", "数据库"],
+      "children": []
+    },
+    {
+      "id": "redis",
+      "name": "Redis",
+      "aliases": ["redis", "缓存"],
+      "children": []
+    },
+    {
+      "id": "api_design",
+      "name": "接口设计",
+      "aliases": ["接口", "api", "rest"],
+      "children": []
+    },
+    {
+      "id": "product",
+      "name": "产品经理",
+      "aliases": ["产品经理", "产品助理"],
+      "children": ["requirement", "prototype", "prd", "user_research"]
+    },
+    {
+      "id": "requirement",
+      "name": "需求分析",
+      "aliases": ["需求", "需求分析"],
+      "children": []
+    },
+    {
+      "id": "prototype",
+      "name": "原型设计",
+      "aliases": ["原型", "figma", "axure"],
+      "children": []
+    },
+    {
+      "id": "prd",
+      "name": "PRD撰写",
+      "aliases": ["prd", "产品文档"],
+      "children": []
+    },
+    {
+      "id": "user_research",
+      "name": "用户研究",
+      "aliases": ["用户研究", "用户调研", "竞品"],
+      "children": []
+    },
+    {
+      "id": "new_media",
+      "name": "新媒体运营",
+      "aliases": ["新媒体", "新媒体运营", "内容运营"],
+      "children": ["copywriting", "xiaohongshu", "wechat", "short_video", "analytics_ops"]
+    },
+    {
+      "id": "copywriting",
+      "name": "文案策划",
+      "aliases": ["文案", "选题", "文案策划"],
+      "children": []
+    },
+    {
+      "id": "xiaohongshu",
+      "name": "小红书运营",
+      "aliases": ["小红书"],
+      "children": []
+    },
+    {
+      "id": "wechat",
+      "name": "公众号运营",
+      "aliases": ["公众号", "微信"],
+      "children": []
+    },
+    {
+      "id": "short_video",
+      "name": "短视频运营",
+      "aliases": ["短视频", "抖音", "剪辑"],
+      "children": []
+    },
+    {
+      "id": "analytics_ops",
+      "name": "运营数据分析",
+      "aliases": ["阅读量", "播放量", "完播率", "涨粉"],
+      "children": []
+    }
+  ]
+}

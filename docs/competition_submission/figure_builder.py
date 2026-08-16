@@ -345,7 +345,7 @@ def build_credibility_sources(path: Path, font_path: Path) -> None:
     pillars = [
         (110, 360, 320, 760, "政策背景", "2025-11-20\n2025-04-08\n2026-04-23\n2026-06-08"),
         (390, 300, 600, 760, "代码实现", "14 个 API 模块\n26 个服务模块\n58 条路由"),
-        (670, 240, 930, 760, "测试构建", "17 个测试文件\n68 个测试函数\n前端 build 通过"),
+        (670, 240, 930, 760, "测试构建", "25 个测试文件\n107 个测试函数\n前端 build 通过"),
         (1000, 300, 1210, 760, "部署材料", "Docker Compose\nNginx 配置\n健康检查"),
         (1280, 360, 1490, 760, "治理边界", "用户隔离\nAI 开关\n文件清理"),
     ]
@@ -361,7 +361,7 @@ def build_showcase_flow(path: Path, font_path: Path) -> None:
         ("赛题痛点", "毕业生规模增长、人工指导效率不足"),
         ("平台闭环", "上传、解析、评价、匹配、建议、导出、沉淀"),
         ("关键技术", "结构化解析、六维评价、证据匹配、离线回退"),
-        ("工程证明", "68 项测试通过、前端构建通过、部署材料齐全"),
+        ("工程证明", "107 项测试通过、前端构建通过、部署材料齐全"),
         ("应用价值", "学生、教师、学校三层价值落点"),
     ]
     y = 180
@@ -388,8 +388,8 @@ def build_testing_structure(path: Path, font_path: Path) -> None:
     image, draw = _canvas()
     _header(draw, font_path, "测试验证支撑结构图", "以自动化测试、构建验证和部署检查共同支撑工程可信性")
     _center_box(draw, font_path, (610, 110, 990, 220), "验证目标", "证明系统真实可运行、可回归、可展示", title_size=30, body_size=20, wrap_limit=18)
-    _box(draw, font_path, (90, 300, 470, 620), "后端测试", "17 个测试文件\n68 个测试函数\n覆盖解析、流水线、批量、权限、教师端等", fill=(236, 244, 252), wrap_limit=14)
-    _box(draw, font_path, (610, 300, 990, 620), "前端构建", "npm run build\n2158 modules transformed\n生成 dist 产物", fill=(236, 244, 252), wrap_limit=14)
+    _box(draw, font_path, (90, 300, 470, 620), "后端测试", "25 个测试文件\n107 个测试函数\n覆盖解析、流水线、批量、权限、教师端等", fill=(236, 244, 252), wrap_limit=14)
+    _box(draw, font_path, (610, 300, 990, 620), "前端构建", "npm run build\n2161 modules transformed\n生成 dist 产物", fill=(236, 244, 252), wrap_limit=14)
     _box(draw, font_path, (1130, 300, 1510, 620), "部署检查", "Docker Compose\n/api/health\n数据目录与报告目录检查", fill=(236, 244, 252), wrap_limit=14)
     _arrow(draw, (800, 220), (280, 300))
     _arrow(draw, (800, 220), (800, 300))

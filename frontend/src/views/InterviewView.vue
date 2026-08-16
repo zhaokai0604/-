@@ -126,6 +126,7 @@ onMounted(() => {
             <h3><MessageCircle :size="18" /> 面试训练</h3>
             <span class="panel-subtitle">
               {{ selectedRecord ? `${selectedRecord.filename} · ${selectedRecord.target_position || '通用岗位'}` : '请选择一份简历' }}
+              · 每次重新生成都会换一套训练题
             </span>
           </div>
           <button
@@ -135,7 +136,7 @@ onMounted(() => {
             @click="generateInterview(true)"
           >
             <Sparkles :size="16" />
-            {{ generating ? '生成中…' : questionCount ? '重新生成题目' : '生成面试题' }}
+            {{ generating ? '生成中…' : questionCount || mockInterview.steps?.length ? '换一套题目' : '生成面试题' }}
           </button>
         </div>
 
@@ -152,7 +153,7 @@ onMounted(() => {
           </div>
           <div>
             <span>生成模式</span>
-            <strong>{{ interviewPrep.mode === 'deepseek' ? 'AI' : '规则' }}</strong>
+            <strong>{{ interviewPrep.mode === 'deepseek' ? '增强' : '规则' }}</strong>
           </div>
         </div>
         <p v-else class="empty-inline">
@@ -165,23 +166,6 @@ onMounted(() => {
         :session="mockInterview"
         :record-id="selectedRecordId"
       />
-
-      <section v-if="interviewPrep.categories?.length" class="panel interview-panel">
-        <div class="panel-heading">
-          <div>
-            <h3>问题清单</h3>
-            <span class="panel-subtitle">{{ interviewPrep.summary }}</span>
-          </div>
-        </div>
-        <div v-for="category in interviewPrep.categories" :key="category.name" class="interview-category">
-          <h4>{{ category.name }}</h4>
-          <article v-for="(item, index) in category.questions" :key="`${category.name}-${index}`" class="interview-item">
-            <p class="interview-question">{{ item.question }}</p>
-            <p v-if="item.tip" class="interview-tip"><span>提示</span>{{ item.tip }}</p>
-            <small v-if="item.focus">{{ item.focus }}</small>
-          </article>
-        </div>
-      </section>
     </div>
   </section>
 </template>

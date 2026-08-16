@@ -22,7 +22,7 @@ def test_single_analysis_returns_processing_and_completes(client: TestClient, tm
     assert body["status"] == "success"
     assert body["total_score"] > 0
     assert body["analysis_mode"] == "core"
-    assert body["analysis_mode_label"] == "快速规则分析"
+    assert body["analysis_mode_label"] == "规则分析"
     assert body["ai_enhancement_status"] == "none"
     assert body.get("interview_prep", {}) == {}
     assert body.get("mock_interview", {}) == {}
@@ -174,7 +174,7 @@ def test_ai_enhancement_updates_success_record(client: TestClient, monkeypatch):
         from app.api.platform import record_to_response
 
         payload = record_to_response(record, include_detail=True, db=db)
-        assert payload["analysis_mode_label"] == "AI 深度优化已完成"
+        assert payload["analysis_mode_label"] == "增强分析已完成"
 
 
 def test_ai_enhancement_failure_returns_core_label(client: TestClient, monkeypatch):
@@ -211,7 +211,7 @@ def test_ai_enhancement_failure_returns_core_label(client: TestClient, monkeypat
         db.commit()
         db.refresh(record)
         pending_payload = record_to_response(record, include_detail=True, db=db)
-        assert pending_payload["analysis_mode_label"] == "AI 深度优化中"
+        assert pending_payload["analysis_mode_label"] == "增强分析进行中"
         record_id = record.id
 
     def fake_enhance(result, resume_text, enable_ai):
@@ -231,7 +231,7 @@ def test_ai_enhancement_failure_returns_core_label(client: TestClient, monkeypat
         assert sections["_ai_enhancement_error"] == "DeepSeek unavailable"
 
         payload = record_to_response(record, include_detail=True, db=db)
-        assert payload["analysis_mode_label"] == "快速规则分析"
+        assert payload["analysis_mode_label"] == "规则分析"
         assert payload["ai_fallback_reason"] == ""
         assert payload["ai_enhancement_error"] == "DeepSeek unavailable"
 

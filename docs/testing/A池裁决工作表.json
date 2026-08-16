@@ -1,0 +1,685 @@
+{
+  "version": 1,
+  "policy": "third_party_adjudication_does_not_overwrite_raw",
+  "source": "docs/testing/annotation_disagreements_A_B_common15.json",
+  "generated_at": "2026-08-03T17:02:32.213085+00:00",
+  "pending": 0,
+  "done": 13,
+  "cases": [
+    {
+      "id": "resume-005",
+      "priority": "P0",
+      "status": "done",
+      "disputed_fields": [
+        "gold_sections",
+        "issue_types",
+        "parse_quality"
+      ],
+      "annotator_a": {
+        "gold_sections": [
+          "awards",
+          "basic_info",
+          "campus",
+          "skills",
+          "summary"
+        ],
+        "parse_quality": "low",
+        "issue_types": [
+          "layout_fragmentation",
+          "missing_internship",
+          "missing_metrics",
+          "ocr_noise",
+          "weak_structure"
+        ]
+      },
+      "annotator_b": {
+        "gold_sections": [
+          "awards",
+          "basic_info",
+          "education",
+          "internship",
+          "skills"
+        ],
+        "parse_quality": "medium",
+        "issue_types": [
+          "layout_fragmentation",
+          "missing_projects"
+        ]
+      },
+      "adjudicated_gold_sections": [
+        "basic_info",
+        "education",
+        "campus",
+        "skills",
+        "awards",
+        "summary"
+      ],
+      "adjudicated_parse_quality": "medium",
+      "adjudicated_resume_quality": 2,
+      "adjudicated_issue_types": [
+        "layout_fragmentation",
+        "ocr_noise",
+        "weak_structure",
+        "missing_internship",
+        "missing_projects"
+      ],
+      "adjudicator": "third_party_rules_v1",
+      "adjudicated_at": "2026-08-03T17:08:01.133021+00:00",
+      "rationale": "有教育、荣誉、辅导员校园职责与自我评价；无正式公司实习/项目；OCR致字段碎裂。"
+    },
+    {
+      "id": "resume-009",
+      "priority": "P0",
+      "status": "done",
+      "disputed_fields": [
+        "gold_sections",
+        "issue_types",
+        "parse_quality",
+        "resume_quality"
+      ],
+      "annotator_a": {
+        "gold_sections": [],
+        "parse_quality": "low",
+        "resume_quality": 1,
+        "issue_types": [
+          "layout_fragmentation",
+          "missing_metrics",
+          "ocr_noise",
+          "weak_structure"
+        ]
+      },
+      "annotator_b": {
+        "gold_sections": [
+          "awards",
+          "basic_info",
+          "campus",
+          "education",
+          "skills",
+          "summary"
+        ],
+        "parse_quality": "medium",
+        "resume_quality": 3,
+        "issue_types": [
+          "layout_fragmentation",
+          "missing_internship",
+          "missing_projects"
+        ]
+      },
+      "adjudicated_gold_sections": [
+        "basic_info",
+        "education",
+        "campus",
+        "skills",
+        "awards",
+        "summary"
+      ],
+      "adjudicated_parse_quality": "medium",
+      "adjudicated_resume_quality": 3,
+      "adjudicated_issue_types": [
+        "layout_fragmentation",
+        "ocr_noise",
+        "weak_structure",
+        "missing_internship",
+        "missing_projects"
+      ],
+      "adjudicator": "third_party_rules_v1",
+      "adjudicated_at": "2026-08-03T17:08:01.133021+00:00",
+      "rationale": "A空标错误；乱序但可辨基本/教育/校园/荣誉/技能/评价；无实习项目。"
+    },
+    {
+      "id": "resume-013",
+      "priority": "P0",
+      "status": "done",
+      "disputed_fields": [
+        "gold_sections",
+        "issue_types",
+        "resume_quality"
+      ],
+      "annotator_a": {
+        "gold_sections": [
+          "awards",
+          "basic_info",
+          "campus",
+          "internship",
+          "skills",
+          "summary"
+        ],
+        "resume_quality": 3,
+        "issue_types": [
+          "layout_fragmentation",
+          "missing_projects",
+          "weak_structure"
+        ]
+      },
+      "annotator_b": {
+        "gold_sections": [
+          "basic_info",
+          "campus",
+          "education"
+        ],
+        "resume_quality": 2,
+        "issue_types": [
+          "layout_fragmentation",
+          "missing_internship",
+          "missing_projects"
+        ]
+      },
+      "adjudicated_gold_sections": [
+        "basic_info",
+        "education",
+        "projects",
+        "campus",
+        "skills",
+        "awards",
+        "summary"
+      ],
+      "adjudicated_parse_quality": "medium",
+      "adjudicated_resume_quality": 3,
+      "adjudicated_issue_types": [
+        "layout_fragmentation",
+        "weak_structure",
+        "missing_internship"
+      ],
+      "adjudicator": "third_party_rules_v1",
+      "adjudicated_at": "2026-08-03T17:08:01.133021+00:00",
+      "rationale": "乱序但可辨教育/个人账号项目/校新媒体/奖项；无公司实习；结构弱。"
+    },
+    {
+      "id": "resume-015",
+      "priority": "P0",
+      "status": "done",
+      "disputed_fields": [
+        "gold_sections",
+        "issue_types",
+        "parse_quality"
+      ],
+      "annotator_a": {
+        "gold_sections": [
+          "basic_info",
+          "education",
+          "internship",
+          "skills",
+          "summary"
+        ],
+        "parse_quality": "high",
+        "issue_types": [
+          "missing_projects"
+        ]
+      },
+      "annotator_b": {
+        "gold_sections": [
+          "awards",
+          "basic_info",
+          "campus",
+          "education",
+          "internship",
+          "projects",
+          "skills",
+          "summary"
+        ],
+        "parse_quality": "medium",
+        "issue_types": []
+      },
+      "adjudicated_gold_sections": [
+        "basic_info",
+        "education",
+        "internship",
+        "skills",
+        "summary"
+      ],
+      "adjudicated_parse_quality": "high",
+      "adjudicated_resume_quality": 5,
+      "adjudicated_issue_types": [
+        "missing_projects"
+      ],
+      "adjudicator": "third_party_rules_v1",
+      "adjudicated_at": "2026-08-03T17:08:01.133021+00:00",
+      "rationale": "工作经历作internship；证书在技能段不单独标awards；无校园/项目；结构清晰。"
+    },
+    {
+      "id": "resume-002",
+      "priority": "P1",
+      "status": "done",
+      "disputed_fields": [
+        "gold_sections",
+        "parse_quality"
+      ],
+      "annotator_a": {
+        "gold_sections": [
+          "awards",
+          "basic_info",
+          "education",
+          "internship",
+          "projects",
+          "skills"
+        ],
+        "parse_quality": "high"
+      },
+      "annotator_b": {
+        "gold_sections": [
+          "awards",
+          "basic_info",
+          "campus",
+          "education",
+          "internship",
+          "projects",
+          "skills",
+          "summary"
+        ],
+        "parse_quality": "medium"
+      },
+      "adjudicated_gold_sections": [
+        "basic_info",
+        "education",
+        "internship",
+        "projects",
+        "skills",
+        "summary"
+      ],
+      "adjudicated_parse_quality": "high",
+      "adjudicated_resume_quality": 5,
+      "adjudicated_issue_types": [],
+      "adjudicator": "third_party_rules_v1",
+      "adjudicated_at": "2026-08-03T17:08:01.133021+00:00",
+      "rationale": "无校园/荣誉独立块；奖学金嵌入教育段；综合素质段作summary；正文模块边界清晰。"
+    },
+    {
+      "id": "resume-003",
+      "priority": "P1",
+      "status": "done",
+      "disputed_fields": [
+        "gold_sections",
+        "issue_types"
+      ],
+      "annotator_a": {
+        "gold_sections": [
+          "awards",
+          "basic_info",
+          "campus",
+          "skills",
+          "summary"
+        ],
+        "issue_types": [
+          "layout_fragmentation",
+          "missing_internship",
+          "missing_metrics",
+          "missing_projects",
+          "ocr_noise"
+        ]
+      },
+      "annotator_b": {
+        "gold_sections": [
+          "awards",
+          "basic_info",
+          "campus",
+          "education",
+          "skills",
+          "summary"
+        ],
+        "issue_types": [
+          "layout_fragmentation",
+          "missing_internship",
+          "missing_projects"
+        ]
+      },
+      "adjudicated_gold_sections": [
+        "basic_info",
+        "education",
+        "campus",
+        "skills",
+        "awards",
+        "summary"
+      ],
+      "adjudicated_parse_quality": "medium",
+      "adjudicated_resume_quality": 2,
+      "adjudicated_issue_types": [
+        "layout_fragmentation",
+        "ocr_noise",
+        "missing_internship",
+        "missing_projects"
+      ],
+      "adjudicator": "third_party_rules_v1",
+      "adjudicated_at": "2026-08-03T17:08:01.133021+00:00",
+      "rationale": "正文有教育背景与奖学金；无公司实习/项目；双栏碎片与竖排噪声明显。"
+    },
+    {
+      "id": "resume-004",
+      "priority": "P1",
+      "status": "done",
+      "disputed_fields": [
+        "gold_sections",
+        "parse_quality"
+      ],
+      "annotator_a": {
+        "gold_sections": [
+          "awards",
+          "basic_info",
+          "education",
+          "internship",
+          "projects",
+          "skills",
+          "summary"
+        ],
+        "parse_quality": "high"
+      },
+      "annotator_b": {
+        "gold_sections": [
+          "awards",
+          "basic_info",
+          "campus",
+          "education",
+          "internship",
+          "projects",
+          "skills",
+          "summary"
+        ],
+        "parse_quality": "medium"
+      },
+      "adjudicated_gold_sections": [
+        "basic_info",
+        "education",
+        "internship",
+        "projects",
+        "skills",
+        "awards",
+        "summary"
+      ],
+      "adjudicated_parse_quality": "high",
+      "adjudicated_resume_quality": 5,
+      "adjudicated_issue_types": [],
+      "adjudicator": "third_party_rules_v1",
+      "adjudicated_at": "2026-08-03T17:08:01.133021+00:00",
+      "rationale": "无校园经历独立块；项目实践与实习段落完整可读，结构清楚。"
+    },
+    {
+      "id": "resume-006",
+      "priority": "P1",
+      "status": "done",
+      "disputed_fields": [
+        "gold_sections",
+        "issue_types",
+        "resume_quality"
+      ],
+      "annotator_a": {
+        "gold_sections": [
+          "awards",
+          "basic_info",
+          "education",
+          "internship",
+          "skills",
+          "summary"
+        ],
+        "resume_quality": 3,
+        "issue_types": [
+          "layout_fragmentation",
+          "missing_projects"
+        ]
+      },
+      "annotator_b": {
+        "gold_sections": [
+          "basic_info",
+          "campus",
+          "education",
+          "internship",
+          "projects",
+          "skills",
+          "summary"
+        ],
+        "resume_quality": 4,
+        "issue_types": []
+      },
+      "adjudicated_gold_sections": [
+        "basic_info",
+        "education",
+        "internship",
+        "skills",
+        "summary"
+      ],
+      "adjudicated_parse_quality": "medium",
+      "adjudicated_resume_quality": 4,
+      "adjudicated_issue_types": [
+        "layout_fragmentation",
+        "missing_projects"
+      ],
+      "adjudicator": "third_party_rules_v1",
+      "adjudicated_at": "2026-08-03T17:08:01.133021+00:00",
+      "rationale": "实习/工作经历量化充分；奖学金一句在教育段不单独标awards；无项目段。"
+    },
+    {
+      "id": "resume-012",
+      "priority": "P1",
+      "status": "done",
+      "disputed_fields": [
+        "gold_sections",
+        "issue_types"
+      ],
+      "annotator_a": {
+        "gold_sections": [
+          "basic_info",
+          "campus",
+          "projects",
+          "summary"
+        ],
+        "issue_types": [
+          "layout_fragmentation",
+          "missing_internship",
+          "weak_structure"
+        ]
+      },
+      "annotator_b": {
+        "gold_sections": [
+          "basic_info",
+          "campus",
+          "education",
+          "summary"
+        ],
+        "issue_types": [
+          "layout_fragmentation",
+          "missing_internship",
+          "missing_projects"
+        ]
+      },
+      "adjudicated_gold_sections": [
+        "basic_info",
+        "education",
+        "projects",
+        "campus",
+        "skills",
+        "summary"
+      ],
+      "adjudicated_parse_quality": "medium",
+      "adjudicated_resume_quality": 2,
+      "adjudicated_issue_types": [
+        "layout_fragmentation",
+        "missing_internship"
+      ],
+      "adjudicator": "third_party_rules_v1",
+      "adjudicated_at": "2026-08-03T17:08:01.133021+00:00",
+      "rationale": "课程项目与专业技能段均存在；无实习；末尾重复片段致版式碎片。"
+    },
+    {
+      "id": "resume-014",
+      "priority": "P1",
+      "status": "done",
+      "disputed_fields": [
+        "gold_sections",
+        "issue_types"
+      ],
+      "annotator_a": {
+        "gold_sections": [
+          "awards",
+          "basic_info",
+          "campus",
+          "skills",
+          "summary"
+        ],
+        "issue_types": [
+          "layout_fragmentation",
+          "missing_internship",
+          "missing_metrics",
+          "missing_projects",
+          "weak_structure"
+        ]
+      },
+      "annotator_b": {
+        "gold_sections": [
+          "awards",
+          "basic_info",
+          "campus",
+          "education",
+          "skills",
+          "summary"
+        ],
+        "issue_types": [
+          "missing_internship",
+          "missing_projects"
+        ]
+      },
+      "adjudicated_gold_sections": [
+        "basic_info",
+        "education",
+        "campus",
+        "skills",
+        "awards",
+        "summary"
+      ],
+      "adjudicated_parse_quality": "medium",
+      "adjudicated_resume_quality": 3,
+      "adjudicated_issue_types": [
+        "layout_fragmentation",
+        "missing_internship",
+        "missing_projects",
+        "missing_metrics"
+      ],
+      "adjudicator": "third_party_rules_v1",
+      "adjudicated_at": "2026-08-03T17:08:01.133021+00:00",
+      "rationale": "教育背景与在校学生会块明确；无实习/项目；经历量化不足。"
+    },
+    {
+      "id": "resume-007",
+      "priority": "P2",
+      "status": "done",
+      "disputed_fields": [
+        "parse_quality",
+        "resume_quality"
+      ],
+      "annotator_a": {
+        "parse_quality": "high",
+        "resume_quality": 3
+      },
+      "annotator_b": {
+        "parse_quality": "medium",
+        "resume_quality": 4
+      },
+      "adjudicated_gold_sections": [
+        "basic_info",
+        "education",
+        "internship",
+        "projects",
+        "campus",
+        "skills",
+        "summary"
+      ],
+      "adjudicated_parse_quality": "high",
+      "adjudicated_resume_quality": 4,
+      "adjudicated_issue_types": [],
+      "adjudicator": "third_party_rules_v1",
+      "adjudicated_at": "2026-08-03T17:08:01.133021+00:00",
+      "rationale": "板块沿用A/B一致标注；多科室实习与校园活动完整，版式可读性高，内容质量取4。"
+    },
+    {
+      "id": "resume-008",
+      "priority": "P2",
+      "status": "done",
+      "disputed_fields": [
+        "issue_types",
+        "parse_quality",
+        "resume_quality"
+      ],
+      "annotator_a": {
+        "parse_quality": "low",
+        "resume_quality": 2,
+        "issue_types": [
+          "layout_fragmentation",
+          "missing_metrics",
+          "missing_projects",
+          "ocr_noise",
+          "weak_structure"
+        ]
+      },
+      "annotator_b": {
+        "parse_quality": "medium",
+        "resume_quality": 3,
+        "issue_types": [
+          "layout_fragmentation",
+          "missing_internship",
+          "missing_projects"
+        ]
+      },
+      "adjudicated_gold_sections": [
+        "basic_info",
+        "education",
+        "campus",
+        "skills",
+        "awards",
+        "summary"
+      ],
+      "adjudicated_parse_quality": "medium",
+      "adjudicated_resume_quality": 3,
+      "adjudicated_issue_types": [
+        "layout_fragmentation",
+        "ocr_noise",
+        "missing_internship",
+        "missing_projects"
+      ],
+      "adjudicator": "third_party_rules_v1",
+      "adjudicated_at": "2026-08-03T17:08:01.133021+00:00",
+      "rationale": "板块可识别但基本信息/email碎裂；无实习与项目；校园与奖项列表可读。"
+    },
+    {
+      "id": "resume-010",
+      "priority": "P2",
+      "status": "done",
+      "disputed_fields": [
+        "issue_types",
+        "resume_quality"
+      ],
+      "annotator_a": {
+        "resume_quality": 2,
+        "issue_types": [
+          "layout_fragmentation",
+          "missing_internship",
+          "missing_metrics",
+          "missing_projects"
+        ]
+      },
+      "annotator_b": {
+        "resume_quality": 3,
+        "issue_types": [
+          "layout_fragmentation",
+          "missing_internship",
+          "missing_projects"
+        ]
+      },
+      "adjudicated_gold_sections": [
+        "basic_info",
+        "education",
+        "campus",
+        "skills",
+        "awards",
+        "summary"
+      ],
+      "adjudicated_parse_quality": "medium",
+      "adjudicated_resume_quality": 3,
+      "adjudicated_issue_types": [
+        "layout_fragmentation",
+        "missing_projects"
+      ],
+      "adjudicator": "third_party_rules_v1",
+      "adjudicated_at": "2026-08-03T17:08:01.133021+00:00",
+      "rationale": "荣誉与校园活动丰富；有短期工作经验故不勾missing_internship；无项目段。"
+    }
+  ],
+  "instructions": "填写 adjudicated_* 字段后将 status 改为 done；保留 annotator_a/b；完成后才可导出黄金标签。",
+  "adjudicated_at": "2026-08-03T17:08:01.133021+00:00"
+}

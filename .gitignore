@@ -19,3 +19,19 @@ data/*.db
 !data/uploads/.gitkeep
 !data/extracted/.gitkeep
 !data/reports/.gitkeep
+
+# 真实简历流水线：原始件严禁入库；脱敏/分池默认也不提交（需要时再手动放行）
+data/raw_real_resumes/**
+!data/raw_real_resumes/.gitkeep
+data/anonymized_real_resumes/**
+!data/anonymized_real_resumes/.gitkeep
+data/resume_pools/**
+!data/resume_pools/.gitkeep
+
+# 本地生成物 / 大文件实验附件，不进入常规源码提交
+tmp/**
+docs/paper/**
+data/eval/real_parse_annotations*.json
+data/eval/real_parse_metrics*.json
+data/models/sbert-resume-match/model.safetensors
+docs/testing/real_parse_annotations*.json

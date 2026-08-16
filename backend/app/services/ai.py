@@ -22,6 +22,7 @@ def enhance_with_deepseek(result: dict[str, Any], resume_text: str, enable_ai: b
     target_source = result.get("target_position_source", "generic")
     source_label = {
         "manual": "手动输入岗位",
+        "selected": "点选推荐岗位",
         "detected": "简历识别岗位",
         "generic": "通用建议",
     }.get(target_source, "通用建议")
@@ -51,10 +52,11 @@ def enhance_with_deepseek(result: dict[str, Any], resume_text: str, enable_ai: b
         "- rewrite_preview: object with summary and items. items must contain section/original/suggested/focus.\n"
         "Rules:\n"
         "1. Write all user-facing content in Simplified Chinese.\n"
-        "2. Cite concrete resume evidence. Do not invent metrics; use __ placeholders when data is missing.\n"
-        "3. Merge and sharpen the offline findings instead of repeating them verbatim.\n"
-        "4. Rewrite items must be complete resume-ready sentences, not abstract advice.\n"
-        "5. If parse_quality is low, only give file/format advice and do not invent experience.\n\n"
+        "2. Cite concrete resume evidence. Do not invent metrics; use __ only for internship/project duty lines when data is missing.\n"
+        "3. Do NOT demand quantification for education, awards/honors, or skill specialty lists.\n"
+        "4. Merge and sharpen the offline findings instead of repeating them verbatim.\n"
+        "5. Rewrite items must be complete resume-ready sentences, not abstract advice.\n"
+        "6. If parse_quality is low, only give file/format advice and do not invent experience.\n\n"
         f"Target position: {target_position or 'none'}\n"
         f"Target source: {source_label}\n"
         f"Evidence pack: {json.dumps(evidence_pack, ensure_ascii=False)}\n"
@@ -110,7 +112,17 @@ def enhance_with_deepseek(result: dict[str, Any], resume_text: str, enable_ai: b
         target_position,
     )
     if rewrite_preview:
-        result["rewrite_preview"] = rewrite_preview
+        from app.services.optimized_resume import attach_optimized_resume
+
+        skill_hints = []
+        skill_graph = result.get("skill_graph") if isinstance(result.get("skill_graph"), dict) else {}
+        skill_hints = skill_graph.get("hints") or []
+        sections = result.get("sections") if isinstance(result.get("sections"), dict) else {}
+        result["rewrite_preview"] = attach_optimized_resume(
+            rewrite_preview,
+            sections,
+            skill_hints=skill_hints,
+        )
 
     return result, "deepseek"
 

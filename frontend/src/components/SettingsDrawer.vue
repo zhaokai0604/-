@@ -1,9 +1,27 @@
 <script setup>
+import { computed } from 'vue'
 import { Database, LockKeyhole, ShieldCheck, X } from 'lucide-vue-next'
 
 import { usePlatform } from '../stores/platform'
 
 const platform = usePlatform()
+
+const backendHealthLabel = computed(() => {
+  const status = platform.healthStatus?.status
+  if (!platform.healthStatus) return '检测中…'
+  if (status === 'ok') return '正常'
+  if (status === 'degraded') return '降级'
+  return '异常'
+})
+
+const redisHealthLabel = computed(() => {
+  const redis = platform.healthStatus?.redis
+  if (!platform.healthStatus) return '—'
+  if (redis === 'ok') return '已连接'
+  if (redis === 'disabled') return '未启用'
+  // 配置了地址但未连通；本地进程内队列下属可选依赖
+  return '不可用（可选）'
+})
 </script>
 
 <template>
@@ -22,9 +40,9 @@ const platform = usePlatform()
       <section class="modal-section">
         <div class="panel-heading"><h3>服务状态</h3></div>
         <dl class="kv-list">
-          <div><dt>后端</dt><dd>{{ platform.healthStatus?.status === 'ok' ? '正常' : platform.healthStatus ? '异常' : '检测中…' }}</dd></div>
+          <div><dt>后端</dt><dd>{{ backendHealthLabel }}</dd></div>
           <div><dt>数据库</dt><dd>{{ platform.healthStatus?.database === 'ok' ? '已连接' : platform.healthStatus ? '不可用' : '—' }}</dd></div>
-          <div><dt>Redis</dt><dd>{{ platform.healthStatus?.redis === 'ok' ? '已连接' : platform.healthStatus?.redis === 'disabled' ? '未启用' : platform.healthStatus ? '不可用' : '—' }}</dd></div>
+          <div><dt>Redis</dt><dd>{{ redisHealthLabel }}</dd></div>
           <div><dt>任务队列</dt><dd>{{ platform.healthStatus?.worker === 'celery' ? 'Celery' : platform.healthStatus?.worker === 'background_tasks' ? '进程内后台' : '—' }}</dd></div>
         </dl>
       </section>
@@ -42,11 +60,11 @@ const platform = usePlatform()
         <div class="panel-heading"><h3>分析模式</h3></div>
         <label class="switch-row">
           <input v-model="platform.enableAi" type="checkbox" />
-          <span>启用 AI 深度优化</span>
+          <span>启用增强分析</span>
         </label>
         <dl class="kv-list">
           <div><dt>当前模式</dt><dd>{{ platform.modeLabel }}</dd></div>
-          <div><dt>后台优化</dt><dd>先生成可用结果，AI 优化完成后自动补齐</dd></div>
+          <div><dt>后台优化</dt><dd>先生成可用结果，增强分析完成后自动补齐</dd></div>
         </dl>
       </section>
 

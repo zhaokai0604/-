@@ -1,12 +1,44 @@
 <script setup>
-import { defineAsyncComponent } from 'vue'
-import { GraduationCap, RefreshCw, UsersRound } from 'lucide-vue-next'
+import { computed, defineAsyncComponent, ref } from 'vue'
+import { ClipboardList, GraduationCap, RefreshCw, UsersRound } from 'lucide-vue-next'
 
+import { createTeacherTrainingTask } from '../../api/client'
 import { usePlatform } from '../../stores/platform'
 
 const ClassStatsCharts = defineAsyncComponent(() => import('../../components/ClassStatsCharts.vue'))
 
 const platform = usePlatform()
+const trainingLoading = ref(false)
+const trainingTask = ref(null)
+const trainingError = ref('')
+const copyNotice = ref('')
+
+const commonIssues = computed(() => platform.teacherClassPanel?.common_issues || [])
+
+async function createTask(issue, className = '') {
+  trainingLoading.value = true
+  trainingError.value = ''
+  copyNotice.value = ''
+  try {
+    const payload = await createTeacherTrainingTask({ issue, class_name: className })
+    trainingTask.value = payload.task || payload
+  } catch (err) {
+    trainingError.value = err.message || '生成训练任务失败'
+  } finally {
+    trainingLoading.value = false
+  }
+}
+
+async function copyStudentMessage() {
+  const text = trainingTask.value?.student_message
+  if (!text) return
+  try {
+    await navigator.clipboard.writeText(text)
+    copyNotice.value = '已复制给学生推送文案（不含简历正文）'
+  } catch {
+    copyNotice.value = '复制失败，请手动选择文本'
+  }
+}
 </script>
 
 <template>
@@ -63,13 +95,49 @@ const platform = usePlatform()
       </section>
 
       <section class="panel">
-        <div class="panel-heading"><h3>班级维度共性问题</h3></div>
+        <div class="panel-heading">
+          <div>
+            <h3>班级维度共性问题</h3>
+            <span class="panel-subtitle">可一键生成专题训练任务（只推模板，不暴露简历正文）</span>
+          </div>
+        </div>
         <ul class="rank-list issue-list">
-          <li v-for="item in platform.teacherClassPanel?.common_issues || []" :key="item.issue">
-            <span>{{ item.issue }}</span><strong>{{ item.count }}</strong>
+          <li v-for="item in commonIssues" :key="item.issue" class="issue-with-action">
+            <span>{{ item.issue }}</span>
+            <div class="issue-actions">
+              <strong>{{ item.count }}</strong>
+              <button
+                type="button"
+                class="secondary-action"
+                :disabled="trainingLoading"
+                @click="createTask(item.issue)"
+              >
+                <ClipboardList :size="14" />一键成课
+              </button>
+            </div>
           </li>
-          <li v-if="!platform.teacherClassPanel?.common_issues?.length" class="table-empty">暂无数据</li>
+          <li v-if="!commonIssues.length" class="table-empty">暂无数据</li>
         </ul>
+        <p v-if="trainingError" class="form-error">{{ trainingError }}</p>
+        <p v-if="copyNotice" class="copy-notice">{{ copyNotice }}</p>
+      </section>
+
+      <section v-if="trainingTask" class="panel training-task-panel">
+        <div class="panel-heading">
+          <div>
+            <h3>{{ trainingTask.title }}</h3>
+            <span class="panel-subtitle">
+              {{ trainingTask.class_name }} · 覆盖约 {{ trainingTask.coverage_percent }}%
+              （{{ trainingTask.affected_count }} 条相关诊断）
+            </span>
+          </div>
+          <button type="button" class="primary-action" @click="copyStudentMessage">复制推送文案</button>
+        </div>
+        <p><strong>训练目标：</strong>{{ trainingTask.goal }}</p>
+        <p><strong>任务安排：</strong>{{ trainingTask.tasks }}</p>
+        <p><strong>验收标准：</strong>{{ trainingTask.checklist }}</p>
+        <p class="panel-subtitle">{{ trainingTask.privacy_note }}</p>
+        <pre class="training-message">{{ trainingTask.student_message }}</pre>
       </section>
     </template>
   </section>

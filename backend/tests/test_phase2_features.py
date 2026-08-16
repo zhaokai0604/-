@@ -102,3 +102,57 @@ def test_new_media_offline_suggestions_are_specific():
     assert "小红书" in combined or "公众号" in combined
     assert "SEO" in combined or "淘宝运营" in combined
     assert "曝光" in combined or "播放" in combined or "互动" in combined
+
+
+def test_structured_suggestions_dedupe_repeated_evidence_lines():
+    evidence = {
+        "weak_experience_lines": ["负责活动组织工作", "负责活动组织工作"],
+        "metric_line_count": 0,
+    }
+    items = build_structured_suggestions(
+        {"experience_match": 76},
+        {},
+        {"target_position": "活动运营"},
+        "high",
+        evidence,
+    )
+    evidence_items = [item for item in items if item["problem"] == "经历描述缺少结果闭环"]
+    assert len(evidence_items) == 1
+
+
+def test_rewrite_skips_portfolio_url_and_basic_info_leak():
+    """作品链接不能被改写成「地址/身高 + JD 模板」的胡编职责。"""
+    sections = {
+        "basic_info": ["现居地址：陕西省宝鸡市", "身高：160cm"],
+        "projects": ["个人作品：https://a.shoturl.cn/j9l4Ph"],
+        "skills": ["PS", "剪映"],
+        "internship": ["账号内容策划，完成3组主题运营方案，协助提升粉丝增长率15%"],
+    }
+    evidence = {
+        "weak_experience_lines": ["个人作品：https://a.shoturl.cn/j9l4Ph"],
+        "vague_lines": [],
+        "sample_metric_lines": [],
+        "metric_line_count": 0,
+    }
+    preview = build_rewrite_preview(
+        sections,
+        {
+            "target_position": "新媒体运营",
+            "missing_keywords": ["sem", "seo", "互动"],
+            "matched_keywords": [],
+        },
+        evidence,
+        "新媒体运营",
+    )
+    for item in preview["items"]:
+        original = item["original"]
+        suggested = item["suggested"]
+        assert "shoturl" not in original.lower()
+        assert "https://" not in original.lower()
+        assert "现居" not in suggested
+        assert "身高" not in suggested
+        assert "宝鸡" not in suggested
+    # 优化稿不得覆盖作品链接行
+    optimized = (preview.get("optimized_resume") or {}).get("sections") or {}
+    project_lines = optimized.get("projects") or sections["projects"]
+    assert any("shoturl" in str(line).lower() for line in project_lines)

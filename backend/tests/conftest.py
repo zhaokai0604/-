@@ -7,6 +7,7 @@ os.environ.setdefault("SESSION_SECRET", "test-session-secret")
 os.environ.setdefault("ALLOW_REGISTER", "true")
 os.environ.setdefault("ADMIN_USERNAME", "sysadmin")
 os.environ.setdefault("ADMIN_PASSWORD", "Password1")
+os.environ.setdefault("USE_SEMANTIC_MODEL", "false")
 
 from app.core.config import get_settings
 

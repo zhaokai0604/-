@@ -36,9 +36,9 @@ const platform = usePlatform()
             <td><span class="mode-tag" :class="platform.displayAnalysisModeClass(item)">{{ platform.displayAnalysisModeLabel(item) }}</span></td>
             <td>{{ platform.formatDateTime(item.created_at) }}</td>
             <td class="row-actions">
-              <a v-if="item.source_resume_url" :href="item.source_resume_url" target="_blank" rel="noopener noreferrer">简历</a>
-              <a v-if="resolveReportDownloadUrl(item, 'docx')" :href="resolveReportDownloadUrl(item, 'docx')" target="_blank">Word</a>
-              <a v-if="resolveReportDownloadUrl(item, 'pdf')" :href="resolveReportDownloadUrl(item, 'pdf')" target="_blank">PDF</a>
+              <a v-if="item.source_resume_url" :href="item.source_resume_url" target="_blank" rel="noopener noreferrer">原简历</a>
+              <a v-if="resolveReportDownloadUrl(item, 'docx')" :href="resolveReportDownloadUrl(item, 'docx')" target="_blank" rel="noopener noreferrer">Word 报告</a>
+              <a v-if="resolveReportDownloadUrl(item, 'pdf')" :href="resolveReportDownloadUrl(item, 'pdf')" target="_blank" rel="noopener noreferrer">PDF 报告</a>
             </td>
           </tr>
           <tr v-if="!platform.reports.length">

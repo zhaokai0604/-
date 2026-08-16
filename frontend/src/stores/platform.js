@@ -37,6 +37,7 @@ import {
   fetchHistoryStatus,
   fetchJobProfiles,
   fetchJobProfilePresets,
+  fetchJobMarket,
   fetchRecordVersions,
   fetchReports,
   fetchTasks,
@@ -55,6 +56,7 @@ import {
   retryHistoryAnalysis,
   refreshInterviewPrep,
   refreshRewritePreview,
+  applyRecommendedJob,
   rewriteReportUrl,
   saveAdminAiConfig,
   sourceResumeUrl,
@@ -84,6 +86,8 @@ function createPlatformStore(router, route) {
   const zipFile = ref(null)
   const targetPosition = ref('')
   const jobDescription = ref('')
+  // 默认关闭：即使输入框有残留值，也不会提交目标岗（避免「我没填却套岗」）
+  const enableTargetMatch = ref(false)
   const enableAi = ref(localStorage.getItem('enableAi') !== 'false')
   const loading = ref(false)
   const detailLoading = ref(false)
@@ -97,6 +101,8 @@ function createPlatformStore(router, route) {
   ]
   const interviewPrepLoading = ref(false)
   const rewritePreviewLoading = ref(false)
+  const applyJobLoading = ref(false)
+  const applyingJobKey = ref('')
   const detailError = ref('')
   const error = ref('')
   const healthStatus = ref(null)
@@ -109,10 +115,14 @@ function createPlatformStore(router, route) {
   const reports = ref([])
   const jobProfiles = ref([])
   const jobProfilePresets = ref([])
+  const jobMarket = ref([])
+  const jobMarketTotal = ref(0)
+  const jobMarketFilters = ref({ city: '', category: '', education: '' })
   const jobsLoading = ref(false)
   const jobsMessage = ref('')
   const selectedJobProfileId = ref(0)
   const selectedJobProfileKey = ref('0')
+  const preserveTargetForNextAnalyze = ref(false)
   const editingJobProfileId = ref(0)
   const jobProfileForm = ref({
     name: '',
@@ -225,7 +235,7 @@ function createPlatformStore(router, route) {
 
   const pageTitle = computed(() => {
     const titles = {
-      dashboard: '平台工作台',
+      dashboard: '就业数据治理工作台',
       single: '单份简历分析',
       batch: '批量分析工作区',
       interview: '面试训练',
@@ -241,23 +251,23 @@ function createPlatformStore(router, route) {
       'teacher-classes': '班级分析面板',
       'teacher-records': '学生分析概览',
     }
-    return titles[activeTab.value] || '简析智评'
+    return titles[activeTab.value] || '简析智评——大学生简历诊断与求职成长平台'
   })
 
   const pageSubtitle = computed(() => {
     const subtitles = {
-      dashboard: '概览简历资产、分析任务与报告，快速进入常用功能。',
-      single: '上传简历并填写目标岗位，系统将生成结构化评价报告。',
-      batch: '批量上传简历压缩包，后台自动逐份分析并汇总结果。',
-      interview: '从已完成分析的简历中生成面试题与模拟训练，不占用简历分析流程。',
-      jobs: '管理常用岗位模板，在分析时一键套用 JD 与岗位要求。',
+      dashboard: '学生诊断、教师班级洞察、岗位与简历质量沉淀，构成就业数据治理闭环。',
+      single: '上传简历并填写目标岗位，生成可解释的评价报告与修改建议。',
+      batch: '批量上传简历，沉淀班级/专业维度的共性问题与质量分布。',
+      interview: '基于已完成分析的简历生成面试训练题，服务求职准备。',
+      jobs: '管理岗位模板与公开岗位库，为适配分析提供要求依据。',
       tasks: '查看单份与批量分析任务的执行状态与进度。',
       reports: '集中下载已生成的 Word / PDF 评价报告。',
-      result: '查看评分详情、岗位匹配度、诊断建议，并导出报告。',
+      result: '查看评分、岗位适配依据、诊断与修改建议，并导出报告。',
       history: '管理已分析的简历记录，支持查看详情与批量清理。',
       'admin-users': '查看系统统计与用户账号，启用、禁用或重置密码。',
       'admin-jobs': '查看全平台岗位模板及归属用户。',
-      'admin-system': '大模型配置、记录元数据与安全审计。',
+      'admin-system': '增强分析配置、记录元数据与安全审计。',
       'teacher-dashboard': '按院校、专业、年级查看学生活跃度与评分分布。',
       'teacher-classes': '按班级查看学生规模、均分与热门投递岗位。',
       'teacher-records': '查看学生分析元数据，不含简历正文。',
@@ -265,7 +275,7 @@ function createPlatformStore(router, route) {
     return subtitles[activeTab.value] || ''
   })
 
-  const modeLabel = computed(() => (enableAi.value ? 'AI 深度优化' : '快速规则分析'))
+  const modeLabel = computed(() => (enableAi.value ? '增强分析' : '规则分析'))
   const historyCount = computed(() => history.value.length)
   const taskCount = computed(() => tasks.value.length)
   const reportCount = computed(() => reports.value.length)
@@ -428,11 +438,11 @@ function createPlatformStore(router, route) {
 
   function analysisModeLabel(mode) {
     const labels = {
-      ai_first: '快速规则分析',
-      deepseek: 'AI 深度优化已完成',
-      core: '快速规则分析',
-      offline_fallback: '快速规则分析',
-      offline: '快速规则分析',
+      ai_first: '规则分析',
+      deepseek: '增强分析已完成',
+      core: '规则分析',
+      offline_fallback: '规则分析',
+      offline: '规则分析',
     }
     return labels[mode] || mode || '未知'
   }
@@ -444,10 +454,10 @@ function createPlatformStore(router, route) {
     if (payload.ai_requested) {
       const status = payload.ai_enhancement_status || ''
       if (payload.analysis_mode === 'deepseek' || status === 'success') {
-        return 'AI 深度优化已完成'
+        return '增强分析已完成'
       }
       if (status === 'pending' || status === 'processing') {
-        return 'AI 深度优化中'
+        return '增强分析进行中'
       }
       return analysisModeLabel(payload.analysis_mode)
     }
@@ -481,6 +491,7 @@ function createPlatformStore(router, route) {
   function targetSourceLabel(source) {
     const labels = {
       manual: '手动输入岗位',
+      selected: '点选推荐岗位',
       detected: '简历识别岗位',
       generic: '通用建议',
     }
@@ -489,11 +500,11 @@ function createPlatformStore(router, route) {
 
   function parseQualityLabel(quality) {
     const labels = {
-      high: '解析质量高',
-      medium: '解析质量中',
-      low: '解析质量低',
+      high: '分析可信度高',
+      medium: '分析可信度中等',
+      low: '分析可信度偏低',
     }
-    return labels[quality] || '解析质量未知'
+    return labels[quality] || '分析可信度未知'
   }
 
   const SECTION_LABELS = {
@@ -655,7 +666,7 @@ function createPlatformStore(router, route) {
 
   function rewriteModeLabel(mode) {
     const labels = {
-      deepseek: 'AI 深度改写',
+      deepseek: '增强改写',
       offline_star: 'STAR 成稿参考',
       offline: '规则成稿参考',
     }
@@ -693,12 +704,36 @@ function createPlatformStore(router, route) {
     }
   }
 
+  function clearTargetJobInputs() {
+    targetPosition.value = ''
+    jobDescription.value = ''
+    selectedJobProfileId.value = 0
+    selectedJobProfileKey.value = '0'
+    enableTargetMatch.value = false
+  }
+
+  function setTargetMatchEnabled(enabled) {
+    enableTargetMatch.value = Boolean(enabled)
+    if (!enableTargetMatch.value) {
+      // 关闭岗位匹配时同步清空残留输入，避免状态在下一次提交中复活。
+      targetPosition.value = ''
+      jobDescription.value = ''
+      selectedJobProfileId.value = 0
+      selectedJobProfileKey.value = '0'
+    }
+  }
+
   function applySelectedJobProfile(profile) {
     if (!profile) {
+      // 切回「不使用模板」时必须清空，否则上次模板/公开岗残留会被当成手动输入
+      targetPosition.value = ''
+      jobDescription.value = ''
+      enableTargetMatch.value = false
       return
     }
     targetPosition.value = profile.target_position || profile.name || ''
     jobDescription.value = profile.requirement_summary || profile.description || ''
+    enableTargetMatch.value = true
   }
 
   function setSelectedJobProfileKey(key) {
@@ -771,6 +806,8 @@ function createPlatformStore(router, route) {
   function syncResultAfterDeletion(deletedRecordIds) {
     if (deletedRecordIds.includes(result.value?.record_id)) {
       result.value = null
+      recordVersions.value = []
+      versionCompare.value = null
       void navigateToRoute(tabRouteMap.history)
     }
   }
@@ -1077,6 +1114,21 @@ function createPlatformStore(router, route) {
     }
   }
 
+  async function loadJobMarket() {
+    jobsLoading.value = true
+    try {
+      // 始终拉全量核验样本，城市/类别/学历由前端芯片即时筛选
+      const payload = await fetchJobMarket({})
+      jobMarket.value = payload.items || []
+      jobMarketTotal.value = Number(payload.verified_total || payload.total || jobMarket.value.length || 0)
+    } catch (err) {
+      jobsMessage.value = err.message || '加载真实岗位库失败。'
+      jobMarket.value = []
+    } finally {
+      jobsLoading.value = false
+    }
+  }
+
   async function loadJobProfileCatalog() {
     await Promise.all([loadJobProfiles(), loadJobProfilePresets()])
   }
@@ -1210,6 +1262,27 @@ function createPlatformStore(router, route) {
       return
     }
     handleJobProfileChange(`preset:${preset.id}`)
+    preserveTargetForNextAnalyze.value = true
+    await navigateToRoute(tabRouteMap.single)
+  }
+
+  async function usePublicJobForAnalysis(job) {
+    if (!job?.target_position) {
+      return
+    }
+    selectedJobProfileKey.value = '0'
+    selectedJobProfileId.value = 0
+    targetPosition.value = job.target_position
+    jobDescription.value = [
+      `岗位类别：${job.category || ''}`,
+      `学历要求：${job.education || ''}`,
+      `经验要求：${job.experience || ''}`,
+      `必备要求：${(job.must_skills || []).join('、')}`,
+      `加分要求：${(job.nice_skills || []).join('、')}`,
+      `岗位职责：${(job.responsibilities || []).join('；')}`,
+    ].filter((item) => !item.endsWith('：')).join('\n')
+    enableTargetMatch.value = true
+    preserveTargetForNextAnalyze.value = true
     await navigateToRoute(tabRouteMap.single)
   }
 
@@ -1436,7 +1509,8 @@ function createPlatformStore(router, route) {
     return shouldShowAiWorking(payload)
   }
 
-  function startSinglePolling(recordId) {
+  function startSinglePolling(recordId, options = {}) {
+    const navigateOnDone = Boolean(options.navigateOnDone)
     stopSinglePolling()
     startAnalysisPhaseTimer()
     singlePollingId.value = window.setInterval(async () => {
@@ -1457,6 +1531,17 @@ function createPlatformStore(router, route) {
           return
         }
         stopSinglePolling()
+        // 流式上传页轮询兜底：完成后跳转详情，避免停在上传页无结果
+        if (
+          navigateOnDone
+          && detail.status === 'success'
+          && route.name === 'workspace-analyze'
+        ) {
+          await navigateToRoute({
+            name: 'workspace-resume-detail',
+            params: { recordId: String(recordId) },
+          })
+        }
       } catch (err) {
         stopSinglePolling()
         detailLoading.value = false
@@ -1574,31 +1659,36 @@ function createPlatformStore(router, route) {
       return
     }
     await runTask(async () => {
+      const useTarget = Boolean(enableTargetMatch.value)
       const payload = await analyzeResume({
         file: singleFile.value,
-        targetPosition: targetPosition.value,
-        jobDescription: jobDescription.value,
-        jobProfileId: selectedJobProfileId.value,
+        targetPosition: useTarget ? String(targetPosition.value || '').trim() : '',
+        jobDescription: useTarget ? String(jobDescription.value || '').trim() : '',
+        jobProfileId: useTarget ? selectedJobProfileId.value : 0,
+        targetMatchEnabled: useTarget,
         enableAi: enableAi.value,
         parentRecordId: parentRecordId.value > 0 ? parentRecordId.value : undefined,
+        stream: true,
       })
       const wasNewVersion = parentRecordId.value > 0
-      const usedJobProfile = selectedJobProfileId.value > 0
       clearNewVersion()
-      if (!wasNewVersion && !usedJobProfile) {
-        targetPosition.value = ''
-        jobDescription.value = ''
+      if (!wasNewVersion) {
+        clearTargetJobInputs()
       }
       singleFile.value = null
       await loadHistory()
       await loadTasks()
-      await navigateToRoute({ name: 'workspace-resume-detail', params: { recordId: String(payload.record_id) } })
-      if (payload.status === 'processing') {
-        result.value = payload
+      // 流式分析：停留在上传页看实时事件；同时轮询兜底（SSE 未连上时后台约 12s 后执行）
+      result.value = payload
+      if (payload.status === 'processing' && payload.stream) {
         detailLoading.value = true
+        startSinglePolling(payload.record_id, { navigateOnDone: true })
+      } else if (payload.status === 'processing') {
+        detailLoading.value = true
+        await navigateToRoute({ name: 'workspace-resume-detail', params: { recordId: String(payload.record_id) } })
         startSinglePolling(payload.record_id)
       } else {
-        result.value = payload
+        await navigateToRoute({ name: 'workspace-resume-detail', params: { recordId: String(payload.record_id) } })
       }
     })
   }
@@ -1649,6 +1739,7 @@ function createPlatformStore(router, route) {
         result.value = {
           ...result.value,
           rewrite_preview: payload.rewrite_preview,
+          skill_graph: payload.skill_graph || result.value.skill_graph,
           template_recommendations: payload.template_recommendations || result.value.template_recommendations,
         }
       }
@@ -1656,6 +1747,31 @@ function createPlatformStore(router, route) {
       error.value = err.message || '深度改写生成失败。'
     } finally {
       rewritePreviewLoading.value = false
+    }
+  }
+
+  async function applyRecommendedJobForRecord(job) {
+    if (!result.value?.record_id || result.value.status !== 'success' || !job) {
+      return
+    }
+    const key = `${job.id || ''}|${job.source_url || ''}|${job.target_position || ''}`
+    applyJobLoading.value = true
+    applyingJobKey.value = key
+    error.value = ''
+    try {
+      const payload = await applyRecommendedJob(result.value.record_id, {
+        jobId: job.id || '',
+        sourceUrl: job.source_url || '',
+        targetPosition: job.target_position || '',
+      })
+      result.value = payload
+      // 仅更新当前分析结果，不回写上传表单，避免下次分析仍带着「手动输入」的推荐岗
+      await loadHistory()
+    } catch (err) {
+      error.value = err.message || '切换岗位评价失败。'
+    } finally {
+      applyJobLoading.value = false
+      applyingJobKey.value = ''
     }
   }
 
@@ -1673,14 +1789,8 @@ function createPlatformStore(router, route) {
     }
     parentRecordId.value = source.record_id
     parentRecordLabel.value = `${source.filename || '简历'} · v${source.version_no || 1}`
-    targetPosition.value = source.target_position || ''
-    jobDescription.value = source.job_description || ''
-    if (source.job_profile?.id) {
-      setSelectedJobProfileKey(`user:${source.job_profile.id}`)
-      applySelectedJobProfile(source.job_profile)
-    } else {
-      setSelectedJobProfileKey('0')
-    }
+    // 新版本默认重新选择岗位，不能静默继承历史记录的岗位要求。
+    clearTargetJobInputs()
     await navigateToRoute({
       name: 'workspace-analyze',
       query: { parentRecordId: String(source.record_id) },
@@ -1705,11 +1815,13 @@ function createPlatformStore(router, route) {
       return
     }
     await runTask(async () => {
+      const useTarget = Boolean(enableTargetMatch.value)
       batchResult.value = await analyzeZip({
         file: zipFile.value,
-        targetPosition: targetPosition.value,
-        jobDescription: jobDescription.value,
-        jobProfileId: selectedJobProfileId.value,
+        targetPosition: useTarget ? String(targetPosition.value || '').trim() : '',
+        jobDescription: useTarget ? String(jobDescription.value || '').trim() : '',
+        jobProfileId: useTarget ? selectedJobProfileId.value : 0,
+        targetMatchEnabled: useTarget,
         enableAi: enableAi.value,
       })
       if (batchResult.value.reused) {
@@ -1873,9 +1985,10 @@ function createPlatformStore(router, route) {
 
   async function removeRecord(record) {
     await runTask(async () => {
-      await deleteHistory(record.record_id)
-      syncResultAfterDeletion([record.record_id])
+      const response = await deleteHistory(record.record_id)
+      syncResultAfterDeletion(response.deleted_record_ids || [record.record_id])
       clearHistorySelection()
+      clearTargetJobInputs()
       await loadHistory()
     })
   }
@@ -1889,12 +2002,13 @@ function createPlatformStore(router, route) {
     }
     await runTask(async () => {
       const deletedRecordIds = [...selectedRecordIds.value]
-      await deleteHistoryBulk({
+      const response = await deleteHistoryBulk({
         record_ids: deletedRecordIds,
         delete_all: false,
       })
-      syncResultAfterDeletion(deletedRecordIds)
+      syncResultAfterDeletion(response.deleted_record_ids || deletedRecordIds)
       clearHistorySelection()
+      clearTargetJobInputs()
       await loadHistory()
     })
   }
@@ -1907,13 +2021,13 @@ function createPlatformStore(router, route) {
       return
     }
     await runTask(async () => {
-      const deletedRecordIds = history.value.map((record) => record.record_id)
-      await deleteHistoryBulk({
+      const response = await deleteHistoryBulk({
         record_ids: [],
         delete_all: true,
       })
-      syncResultAfterDeletion(deletedRecordIds)
+      syncResultAfterDeletion(response.deleted_record_ids || [])
       clearHistorySelection()
+      clearTargetJobInputs()
       await loadHistory()
     })
   }
@@ -1959,6 +2073,7 @@ function createPlatformStore(router, route) {
     }
     if (nextTab === 'jobs') {
       await loadJobProfileCatalog()
+      await loadJobMarket()
     }
     if (nextTab === 'single' || nextTab === 'batch') {
       await loadJobProfileCatalog()
@@ -1990,11 +2105,24 @@ function createPlatformStore(router, route) {
     if (nextTab === 'teacher-records') {
       await loadTeacherRecords()
     }
+    if (route.name === 'workspace-analyze') {
+      if (!preserveTargetForNextAnalyze.value) {
+        // 普通进入分析页时必须是干净表单，防止岗位库或旧页面状态复活。
+        clearTargetJobInputs()
+      }
+      preserveTargetForNextAnalyze.value = false
+    }
     if (route.name === 'workspace-resume-detail') {
       const recordId = Number(route.params.recordId || 0)
-      if (recordId && recordId !== Number(result.value?.record_id || 0)) {
+      // 每次进入详情都从后端重新认领记录，避免删除后继续显示内存中的旧结果。
+      if (recordId) {
         await openRecordById(recordId)
       }
+    } else if (result.value && ['workspace-analyze', 'workspace-resumes', 'workspace-reports'].includes(route.name)) {
+      // 详情离开后清理内存结果，避免下次进入分析页继续显示上一份简历。
+      result.value = null
+      recordVersions.value = []
+      versionCompare.value = null
     }
   }
 
@@ -2050,6 +2178,8 @@ function createPlatformStore(router, route) {
     zipFile,
     targetPosition,
     jobDescription,
+    setTargetMatchEnabled,
+    enableTargetMatch,
     enableAi,
     loading,
     detailLoading,
@@ -2058,6 +2188,8 @@ function createPlatformStore(router, route) {
     copyText,
     interviewPrepLoading,
     rewritePreviewLoading,
+    applyJobLoading,
+    applyingJobKey,
     detailError,
     error,
     healthStatus,
@@ -2071,6 +2203,9 @@ function createPlatformStore(router, route) {
     reports,
     jobProfiles,
     jobProfilePresets,
+    jobMarket,
+    jobMarketTotal,
+    jobMarketFilters,
     jobsLoading,
     jobsMessage,
     selectedJobProfileId,
@@ -2156,6 +2291,7 @@ function createPlatformStore(router, route) {
     submitUserProfile,
     loadJobProfiles,
     loadJobProfilePresets,
+    loadJobMarket,
     loadJobProfileCatalog,
     loadTasks,
     loadReports,
@@ -2171,11 +2307,12 @@ function createPlatformStore(router, route) {
     submitJobProfile,
     savePresetToMyProfiles,
     usePresetForAnalysis,
+    usePublicJobForAnalysis,
     editJobProfile,
     removeJobProfile,
     handleJobProfileChange,
     applySelectedJobProfile,
-    resetJobProfileForm,
+    clearTargetJobInputs,    resetJobProfileForm,
     changeUserStatus,
     changeUserRole,
     roleLabel,
@@ -2207,6 +2344,8 @@ function createPlatformStore(router, route) {
     resolvedSourceResumeUrl,
     batchStatusTone,
     submitSingle,
+    startSinglePolling,
+    stopSinglePolling,
     startNewVersion,
     clearNewVersion,
     submitZip,
@@ -2218,6 +2357,7 @@ function createPlatformStore(router, route) {
     clearError,
     refreshInterviewPrepForRecord,
     refreshRewritePreviewForRecord,
+    applyRecommendedJobForRecord,
     refreshBatchTask,
     openTask,
     openBatchResultRecord,

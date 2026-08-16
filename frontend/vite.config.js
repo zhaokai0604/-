@@ -39,6 +39,9 @@ export default defineConfig({
       '/api': {
         target: apiTarget,
         changeOrigin: true,
+        // 实时分析 SSE 可能超过默认代理超时
+        timeout: 0,
+        proxyTimeout: 0,
       },
     },
   },
@@ -50,6 +53,8 @@ export default defineConfig({
       '/api': {
         target: apiTarget,
         changeOrigin: true,
+        timeout: 0,
+        proxyTimeout: 0,
       },
     },
   },

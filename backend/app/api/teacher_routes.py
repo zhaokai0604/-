@@ -4,14 +4,16 @@ import csv
 import io
 from typing import Any
 
-from fastapi import APIRouter, Depends, Request
+from fastapi import APIRouter, Depends, HTTPException, Request
 from fastapi.responses import Response
 from sqlalchemy.orm import Session
 
 from app.api.platform import build_teacher_stats, require_teacher_or_admin
+from app.api.schemas import TeacherTrainingTaskRequest
 from app.core.database import get_db
 from app.services.teacher_class_stats import build_teacher_class_panel
 from app.services.teacher_review_service import list_teacher_student_records
+from app.services.teacher_training import create_class_training_task
 
 router = APIRouter()
 
@@ -32,6 +34,21 @@ def teacher_classes(request: Request, db: Session = Depends(get_db)) -> dict[str
 def teacher_records(request: Request, db: Session = Depends(get_db)) -> dict[str, Any]:
     require_teacher_or_admin(request, db)
     return {"items": list_teacher_student_records(db)}
+
+
+@router.post("/teacher/training-tasks")
+def teacher_training_task(
+    payload: TeacherTrainingTaskRequest,
+    request: Request,
+    db: Session = Depends(get_db),
+) -> dict[str, Any]:
+    """基于共性问题生成班级训练任务（一键成课）。"""
+    require_teacher_or_admin(request, db)
+    try:
+        task = create_class_training_task(db, issue=payload.issue, class_name=payload.class_name)
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+    return {"task": task}
 
 
 @router.get("/teacher/stats/export")

@@ -1,0 +1,34 @@
+{
+  "version": 1,
+  "policy": "group_disjoint_by_case_id_prefix",
+  "source_cases": 61,
+  "groups": {
+    "train": [
+      "be",
+      "campus",
+      "comp",
+      "da",
+      "design",
+      "eng",
+      "excel",
+      "fe",
+      "finance",
+      "generic",
+      "hr",
+      "hybrid",
+      "media"
+    ],
+    "validation": [
+      "mismatch",
+      "ops",
+      "pm"
+    ],
+    "test": [
+      "research",
+      "sale",
+      "teach",
+      "video"
+    ]
+  },
+  "warning": "仅切分数据；正式测试前必须用 train split 重新训练/拟合，测试集只使用一次。"
+}

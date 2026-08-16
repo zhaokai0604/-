@@ -1,0 +1,194 @@
+{
+  "version": 1,
+  "cases": [
+    {
+      "id": "std-da",
+      "gold_sections": [
+        "basic_info",
+        "education",
+        "internship",
+        "projects",
+        "skills"
+      ],
+      "text": "[姓名]\n求职意向：数据分析实习生\n教育背景\n2022-2025 某某职业技术学院 大数据技术\n实习经历\n2024.06-2024.09 某零售公司 数据分析实习：使用 Python 与 SQL 清洗订单数据，搭建看板。\n项目经历\n校园二手交易数据分析：完成用户行为指标统计与可视化。\n技能证书\nPython、SQL、Excel、Tableau\n"
+    },
+    {
+      "id": "std-fe",
+      "gold_sections": [
+        "basic_info",
+        "education",
+        "internship",
+        "skills"
+      ],
+      "text": "[姓名]\n手机：[手机号]\n教育背景\n某某大学 软件工程 本科\n实习经历\n前端开发实习：Vue3 + TypeScript 完成后台管理页面。\n专业技能\nJavaScript、Vue、HTML、CSS\n"
+    },
+    {
+      "id": "std-be",
+      "gold_sections": [
+        "education",
+        "projects",
+        "skills"
+      ],
+      "text": "教育背景\n计算机科学与技术 本科\n项目经历\n订单服务：Spring Boot + MySQL + Redis 完成接口与缓存。\n技能\nJava、Spring Boot、MySQL、Redis\n"
+    },
+    {
+      "id": "std-pm",
+      "gold_sections": [
+        "basic_info",
+        "education",
+        "internship",
+        "campus"
+      ],
+      "text": "[姓名]\n求职意向：产品经理助理\n教育背景\n电子商务 专科\n实习经历\n产品实习：输出 PRD，用 Figma 画原型并跟进迭代。\n校园经历\n学生会宣传部部长，组织迎新活动覆盖 500 人。\n"
+    },
+    {
+      "id": "std-media",
+      "gold_sections": [
+        "education",
+        "internship",
+        "skills",
+        "awards"
+      ],
+      "text": "教育背景\n网络与新媒体\n实习经历\n新媒体运营：小红书内容策划，单篇阅读 2 万。\n技能证书\n剪辑、文案、数据分析\n获奖情况\n校级新媒体运营大赛二等奖\n"
+    },
+    {
+      "id": "edu-skills-only",
+      "gold_sections": [
+        "education",
+        "skills"
+      ],
+      "text": "教育背景\n酒店管理与数字化运营\n技能\nOffice、PS 基础、短视频剪辑\n"
+    },
+    {
+      "id": "with-awards",
+      "gold_sections": [
+        "education",
+        "projects",
+        "awards",
+        "skills"
+      ],
+      "text": "教育背景\n应用数学\n项目经历\n数学建模：负责建模与论文撰写。\n获奖情况\n省级数学建模二等奖\n技能\nPython、MATLAB\n"
+    },
+    {
+      "id": "campus-heavy",
+      "gold_sections": [
+        "education",
+        "campus",
+        "skills"
+      ],
+      "text": "教育背景\n市场营销\n校园经历\n社团主席，策划 3 场校级活动。\n技能\n活动策划、沟通协调、PPT\n"
+    },
+    {
+      "id": "en-heading",
+      "gold_sections": [
+        "education",
+        "internship",
+        "skills"
+      ],
+      "text": "Education\nB.S. Computer Science\nInternship\nBackend intern: FastAPI and MySQL.\nSkills\nPython, SQL, Docker\n"
+    },
+    {
+      "id": "mixed-cn-en",
+      "gold_sections": [
+        "basic_info",
+        "education",
+        "projects",
+        "skills"
+      ],
+      "text": "[姓名] / 数据分析\n教育背景\n信息管理与信息系统\n项目经历\nSales dashboard with Power BI\nSkills\nSQL、Excel、Power BI\n"
+    },
+    {
+      "id": "dense-headings",
+      "gold_sections": [
+        "education",
+        "internship",
+        "projects",
+        "skills",
+        "awards"
+      ],
+      "text": "教育背景\n智能科学与技术\n实习经历\n算法实习：参与样本标注与基线训练。\n项目经历\n垃圾分类小程序：负责后端接口。\n技能证书\nCET-6、Python\n获奖情况\n校级创新创业大赛铜奖\n"
+    },
+    {
+      "id": "weak-structure",
+      "gold_sections": [
+        "basic_info",
+        "skills"
+      ],
+      "text": "本人性格开朗，学习能力强。\n熟悉 Word、Excel，会一点 PS。\n希望从事运营相关工作。\n"
+    },
+    {
+      "id": "internship-project",
+      "gold_sections": [
+        "education",
+        "internship",
+        "projects"
+      ],
+      "text": "教育背景\n电子商务\n实习经历\n电商运营实习：负责店铺上新与数据复盘。\n项目经历\n毕业设计：校园跑腿小程序需求分析与原型。\n"
+    },
+    {
+      "id": "design-resume",
+      "gold_sections": [
+        "education",
+        "internship",
+        "skills",
+        "awards"
+      ],
+      "text": "教育背景\n视觉传达设计\n实习经历\n电商美工：Photoshop 制作主图与详情页。\n技能\nPhotoshop、Illustrator、详情页设计\n获奖情况\n校级设计展入选\n"
+    },
+    {
+      "id": "research-lite",
+      "gold_sections": [
+        "education",
+        "campus",
+        "skills"
+      ],
+      "text": "教育背景\n应用化学\n校园经历\n实验室助手：文献调研与实验记录整理。\n技能\n文献检索、实验记录、Origin\n"
+    },
+    {
+      "id": "sale-hr",
+      "gold_sections": [
+        "education",
+        "internship",
+        "skills"
+      ],
+      "text": "教育背景\n人力资源管理\n实习经历\n招聘助理：筛选简历、安排面试。\n技能\n沟通、组织、Office\n"
+    },
+    {
+      "id": "finance",
+      "gold_sections": [
+        "education",
+        "internship",
+        "skills"
+      ],
+      "text": "教育背景\n会计学\n实习经历\n财务实习：费用报销核对与月度台账。\n技能\nExcel、细心、台账\n"
+    },
+    {
+      "id": "full-stack",
+      "gold_sections": [
+        "basic_info",
+        "education",
+        "projects",
+        "skills"
+      ],
+      "text": "[姓名]\n求职意向：全栈开发\n教育背景\n软件技术\n项目经历\n校园二手平台：Vue + FastAPI + MySQL，独立上线。\n技能\nVue、Python、MySQL、Linux\n"
+    },
+    {
+      "id": "heading-noise",
+      "gold_sections": [
+        "summary",
+        "education",
+        "skills"
+      ],
+      "text": "自我评价\n乐观积极。\n教育背景\n物流管理\n专业技能\n仓储管理、Excel、沟通\n"
+    },
+    {
+      "id": "multi-internship",
+      "gold_sections": [
+        "education",
+        "internship",
+        "skills"
+      ],
+      "text": "教育背景\n计算机应用\n实习经历\n2023 暑期：测试实习，编写用例 80+。\n2024 暑期：后端实习，完成权限模块。\n技能\nJava、接口测试、MySQL\n"
+    }
+  ]
+}

@@ -18,24 +18,23 @@ if not defined PYTHON_CMD (
 
 cd /d "%~dp0backend"
 
-if not exist ".venv\Scripts\python.exe" (
+set "VENV_PY=%CD%\.venv\Scripts\python.exe"
+
+if not exist "%VENV_PY%" (
   echo [INFO] .venv not found. Creating virtual environment...
   %PYTHON_CMD% -m venv .venv
   if errorlevel 1 goto :fail
-  call ".venv\Scripts\activate.bat"
-  python -m pip install --upgrade pip
+  "%VENV_PY%" -m pip install --upgrade pip
   if errorlevel 1 goto :fail
-  pip install -r requirements.txt
+  "%VENV_PY%" -m pip install --prefer-binary -r requirements.txt
   if errorlevel 1 goto :fail
-) else (
-  call ".venv\Scripts\activate.bat"
 )
 
 set DATABASE_URL=sqlite:///:memory:
 set SESSION_SECRET=ci-test-secret
 set ALLOW_REGISTER=true
 
-python -m pytest tests/ -q
+"%VENV_PY%" -m pytest tests/ -q
 set "RC=%ERRORLEVEL%"
 echo.
 if not "%RC%"=="0" (
