@@ -4,7 +4,9 @@
 
 [![CI](https://github.com/zhaokai0604/-/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/zhaokai0604/-/actions/workflows/ci.yml) [![CodeQL](https://github.com/zhaokai0604/-/actions/workflows/codeql.yml/badge.svg?branch=main)](https://github.com/zhaokai0604/-/actions/workflows/codeql.yml) [![License: Apache-2.0](https://img.shields.io/badge/License-Apache--2.0-blue.svg)](LICENSE)
 
-Jianxi Resume Intelligence is a full-stack platform for structured resume ingestion, evidence-aware evaluation, job matching, document delivery, and aggregated teaching insights. It was created as a vocational-education competition project and is now maintained as an open-source engineering project.
+> A 2026 national-finals qualifying project in the University Student Data Elements Literacy Competition, maintained as an open-source software project.
+
+Jianxi Resume Intelligence is a full-stack platform for structured resume ingestion, evidence-aware evaluation, job matching, document delivery, and aggregated teaching insights. The repository is written for users, deployers, and contributors rather than as a competition presentation.
 
 > The system is a decision-support tool, not an automated hiring decision system. Scores and matching results require human review.
 
@@ -34,8 +36,8 @@ FastAPI service ── SQLite (local) or MySQL (deployment)
 Prerequisites: Python 3.10–3.12 and Node.js 18+.
 
 ```powershell
-git clone https://github.com/zhaokai0604/-.git
-cd -
+git clone https://github.com/zhaokai0604/-.git jianxi-resume-intelligence
+cd jianxi-resume-intelligence
 copy .env.example .env
 # Set a unique SESSION_SECRET and ADMIN_PASSWORD in .env before exposing the service.
 .\start_dev.bat
