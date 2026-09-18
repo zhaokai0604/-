@@ -2,7 +2,7 @@
 
 [简体中文](README.md) | [English](README_EN.md)
 
-[![CI](https://github.com/zhaokai0604/-/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/zhaokai0604/-/actions/workflows/ci.yml) [![CodeQL](https://github.com/zhaokai0604/-/actions/workflows/codeql.yml/badge.svg?branch=main)](https://github.com/zhaokai0604/-/actions/workflows/codeql.yml) [![License: Apache-2.0](https://img.shields.io/badge/License-Apache--2.0-blue.svg)](LICENSE)
+[![CI](https://github.com/zhaokai0604/jianxi-resume-intelligence/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/zhaokai0604/jianxi-resume-intelligence/actions/workflows/ci.yml) [![CodeQL](https://github.com/zhaokai0604/jianxi-resume-intelligence/actions/workflows/codeql.yml/badge.svg?branch=main)](https://github.com/zhaokai0604/jianxi-resume-intelligence/actions/workflows/codeql.yml) [![License: Apache-2.0](https://img.shields.io/badge/License-Apache--2.0-blue.svg)](LICENSE)
 
 > 2026 大学生数据要素素质大赛国赛晋级作品。现以完整软件项目方式开源维护。
 
@@ -44,7 +44,7 @@ FastAPI 服务 ── SQLite（本地）/ MySQL（部署）
 ### 本地开发模式
 
 ```powershell
-git clone https://github.com/zhaokai0604/-.git jianxi-resume-intelligence
+git clone https://github.com/zhaokai0604/jianxi-resume-intelligence.git
 cd jianxi-resume-intelligence
 copy .env.example .env
 .\start_dev.bat
