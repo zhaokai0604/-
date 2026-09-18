@@ -1,0 +1,25 @@
+name: Feature request
+description: Propose a scoped improvement with privacy and evidence considerations.
+title: "[Feature]: "
+labels: [enhancement]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem to solve
+      description: What user or operational need is not met today?
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed behavior
+    validations:
+      required: true
+  - type: textarea
+    id: boundaries
+    attributes:
+      label: Privacy, data, and evidence boundary
+      description: Explain what data is needed, what should not be collected, and how success can be verified.
+    validations:
+      required: true

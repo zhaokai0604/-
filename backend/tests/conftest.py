@@ -16,7 +16,7 @@ get_settings.cache_clear()
 import pytest
 from fastapi.testclient import TestClient
 
-from app.core.database import Base, SessionLocal, engine, init_db
+from app.core.database import Base, engine, init_db
 from app.main import app
 
 

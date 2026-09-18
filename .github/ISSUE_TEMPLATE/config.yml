@@ -1,0 +1,5 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Security vulnerability / 安全漏洞
+    url: https://github.com/zhaokai0604/-/security/advisories/new
+    about: Please report vulnerabilities privately. Do not include secrets or real resumes in an issue.

@@ -1,9 +1,8 @@
-from datetime import datetime
-from types import SimpleNamespace
 
 from app.models.entities import BatchTask
 from app.services.batch_service import _finalize_batch_status, batch_to_response
 from app.utils.json_tools import dumps
+from app.utils.time import utc_now
 
 
 class _FakeQuery:
@@ -41,7 +40,7 @@ def test_batch_to_response_includes_skipped_count():
         ),
         status="success",
         enable_ai=False,
-        created_at=datetime.utcnow(),
+        created_at=utc_now(),
     )
     batch.id = 99
 

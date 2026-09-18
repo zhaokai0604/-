@@ -7,9 +7,9 @@ run one synchronous AI enhancement that covers diagnosis and rewrite output.
 from __future__ import annotations
 
 import logging
+from collections.abc import Callable
 from pathlib import Path
 from time import perf_counter
-from collections.abc import Callable
 from typing import Any
 
 from app.api.serializers import job_profile_payload
@@ -22,7 +22,6 @@ from app.services.resume_template_engine import recommend_resume_templates
 from app.services.scoring import analyze_resume
 from app.services.skill_graph import build_skill_graph_hints
 from app.services.suggestion_engine import build_action_roadmap
-
 
 logger = logging.getLogger("uvicorn.error")
 EventSink = Callable[[str, dict[str, Any]], None]
@@ -164,7 +163,7 @@ def run_analysis_pipeline(
                     f"未指定目标岗：已推荐 {len(related_jobs)} 个相似岗位，未自动采用"
                     if not user_supplied_target
                     else (
-                        f"按您填写的目标岗分析；下方推荐仅供参考"
+                        "按您填写的目标岗分析；下方推荐仅供参考"
                         if related_jobs
                         else "按您填写的目标岗做匹配分析"
                     )

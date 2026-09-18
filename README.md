@@ -1,4 +1,8 @@
-# 简历评价智能体 V2.0
+# 简历评价智能体 V2.0 / Resume Analysis & Evaluation Platform
+
+[简体中文](README.md) | [English](README_EN.md)
+
+[![CI](https://github.com/zhaokai0604/-/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/zhaokai0604/-/actions/workflows/ci.yml) [![CodeQL](https://github.com/zhaokai0604/-/actions/workflows/codeql.yml/badge.svg?branch=main)](https://github.com/zhaokai0604/-/actions/workflows/codeql.yml) [![License: Apache-2.0](https://img.shields.io/badge/License-Apache--2.0-blue.svg)](LICENSE)
 
 > **大学生数据要素素质大赛 · 职教组参赛作品**  
 > 高校就业数据治理闭环：学生诊断 → 教师班级洞察 → 岗位与简历质量沉淀。  
@@ -21,7 +25,7 @@
 | 实时过程 | 上传后 SSE 推送解析 / 评分中间事件，过程可演示、可复核 |
 | 报告与版本 | Word / PDF 报告、ZIP 批量、历史版本 Δ 分（时光机） |
 | 模拟面试 | 多模板随机换题、避重上轮；无 Key 也可离线出题 |
-| 教师 / 管理 | 班级统计（无简历正文）、一键成课短板模板、用户与系统管理 |
+| 教师 / 管理 | 班级统计（无简历正文）、一键成课短板模板、用户与系统管理、**花名册导入** |
 
 **设计原则**
 
@@ -211,6 +215,19 @@ copy .env.example .env
 docker compose up -d --build
 ```
 
+**校内生产部署**（强密码、关公开注册、Celery Beat 维护任务）：
+
+```powershell
+copy .env.example .env
+# 编辑 .env：APP_ENV=production、SESSION_SECRET、ADMIN_PASSWORD、PUBLIC_BASE_URL
+cd backend
+python scripts/preflight.py --strict-production
+cd ..
+docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d --build
+```
+
+上线前检查、备份与 Nginx SSE 配置见 [`docs/部署指南.md`](docs/部署指南.md) 第 13 节。
+
 | 页面 | 地址 |
 |------|------|
 | 首页 | http://localhost:5173 |
@@ -320,6 +337,8 @@ docker compose up -d --build
 | 前端 | Vue 3 + Vite + ECharts |
 | 后端 | FastAPI |
 | 数据库 | 演示 SQLite；生产可 MySQL 8 |
+| 多租户 | 默认单校 `organizations` 表；教师/管理统计按 `organization_id` 隔离 |
+| 对象存储 | 默认本地 `data/`；`BLOB_STORE=local`（可扩展 MinIO/S3） |
 | 语义 | sentence-transformers / 微调 text2vec-base-chinese（可选） |
 | 异步 | Docker 可选 Redis + Celery；本地默认关闭 |
 

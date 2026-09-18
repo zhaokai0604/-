@@ -11,6 +11,7 @@ from sqlalchemy.orm import Session
 from app.api.platform import build_teacher_stats, require_teacher_or_admin
 from app.api.schemas import TeacherTrainingTaskRequest
 from app.core.database import get_db
+from app.services.organization import organization_id_for_user
 from app.services.teacher_class_stats import build_teacher_class_panel
 from app.services.teacher_review_service import list_teacher_student_records
 from app.services.teacher_training import create_class_training_task
@@ -26,14 +27,14 @@ def teacher_stats(request: Request, db: Session = Depends(get_db)) -> dict[str, 
 
 @router.get("/teacher/classes")
 def teacher_classes(request: Request, db: Session = Depends(get_db)) -> dict[str, Any]:
-    require_teacher_or_admin(request, db)
-    return build_teacher_class_panel(db)
+    user = require_teacher_or_admin(request, db)
+    return build_teacher_class_panel(db, organization_id_for_user(user))
 
 
 @router.get("/teacher/records")
 def teacher_records(request: Request, db: Session = Depends(get_db)) -> dict[str, Any]:
-    require_teacher_or_admin(request, db)
-    return {"items": list_teacher_student_records(db)}
+    user = require_teacher_or_admin(request, db)
+    return {"items": list_teacher_student_records(db, organization_id_for_user(user))}
 
 
 @router.post("/teacher/training-tasks")

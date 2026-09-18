@@ -9,6 +9,7 @@ from sqlalchemy.orm import Session
 
 from app.api.serializers import admin_record_payload, admin_user_payload, audit_log_payload, user_payload
 from app.models.entities import AnalysisRecord, AuditLog, BatchTask, JobProfile, Report, User, UserProfile
+from app.services.organization import organization_id_for_user
 from app.services.teacher_class_stats import teacher_class_distribution
 from app.utils.json_tools import loads
 from app.utils.time import utc_now
@@ -16,25 +17,30 @@ from app.utils.time import utc_now
 
 def build_admin_stats(admin: User, db: Session) -> dict[str, Any]:
     today_start = utc_now().replace(hour=0, minute=0, second=0, microsecond=0)
+    org_id = organization_id_for_user(admin)
+    user_base = db.query(User).filter(User.organization_id == org_id)
+    record_base = db.query(AnalysisRecord).filter(AnalysisRecord.organization_id == org_id)
+    batch_base = db.query(BatchTask).filter(BatchTask.organization_id == org_id)
     return {
         "admin": user_payload(admin),
+        "organization_id": org_id,
         "users": {
-            "total": db.query(User).count(),
-            "active": db.query(User).filter(User.status == "active").count(),
-            "disabled": db.query(User).filter(User.status == "disabled").count(),
-            "admins": db.query(User).filter(User.role == "admin").count(),
-            "teachers": db.query(User).filter(User.role == "teacher").count(),
+            "total": user_base.count(),
+            "active": user_base.filter(User.status == "active").count(),
+            "disabled": user_base.filter(User.status == "disabled").count(),
+            "admins": user_base.filter(User.role == "admin").count(),
+            "teachers": user_base.filter(User.role == "teacher").count(),
         },
         "records": {
-            "total": db.query(AnalysisRecord).count(),
-            "today": db.query(AnalysisRecord).filter(AnalysisRecord.created_at >= today_start).count(),
+            "total": record_base.count(),
+            "today": record_base.filter(AnalysisRecord.created_at >= today_start).count(),
         },
         "batch_tasks": {
-            "total": db.query(BatchTask).count(),
-            "processing": db.query(BatchTask).filter(BatchTask.status.in_(["pending", "processing"])).count(),
+            "total": batch_base.count(),
+            "processing": batch_base.filter(BatchTask.status.in_(["pending", "processing"])).count(),
         },
         "reports": {
-            "total": db.query(Report).count(),
+            "total": db.query(Report).filter(Report.organization_id == org_id).count(),
         },
         "audit_logs": {
             "total": db.query(AuditLog).count(),
@@ -45,8 +51,9 @@ def build_admin_stats(admin: User, db: Session) -> dict[str, Any]:
 def build_teacher_stats(user: User, db: Session) -> dict[str, Any]:
     today_start = utc_now().replace(hour=0, minute=0, second=0, microsecond=0)
     week_start = today_start - timedelta(days=6)
+    org_id = organization_id_for_user(user)
 
-    success_filter = AnalysisRecord.status == "success"
+    success_filter = (AnalysisRecord.status == "success") & (AnalysisRecord.organization_id == org_id)
     total_records = db.query(func.count(AnalysisRecord.id)).filter(success_filter).scalar() or 0
     today_records = (
         db.query(func.count(AnalysisRecord.id))
@@ -91,7 +98,8 @@ def build_teacher_stats(user: User, db: Session) -> dict[str, Any]:
 
     school_rows = (
         db.query(UserProfile.school, func.count(UserProfile.id))
-        .filter(UserProfile.school != "")
+        .join(User, User.id == UserProfile.user_id)
+        .filter(User.organization_id == org_id, User.role == "user", UserProfile.school != "")
         .group_by(UserProfile.school)
         .order_by(func.count(UserProfile.id).desc())
         .limit(8)
@@ -99,7 +107,8 @@ def build_teacher_stats(user: User, db: Session) -> dict[str, Any]:
     )
     major_rows = (
         db.query(UserProfile.major, func.count(UserProfile.id))
-        .filter(UserProfile.major != "")
+        .join(User, User.id == UserProfile.user_id)
+        .filter(User.organization_id == org_id, User.role == "user", UserProfile.major != "")
         .group_by(UserProfile.major)
         .order_by(func.count(UserProfile.id).desc())
         .limit(8)
@@ -107,7 +116,8 @@ def build_teacher_stats(user: User, db: Session) -> dict[str, Any]:
     )
     grade_rows = (
         db.query(UserProfile.grade, func.count(UserProfile.id))
-        .filter(UserProfile.grade != "")
+        .join(User, User.id == UserProfile.user_id)
+        .filter(User.organization_id == org_id, User.role == "user", UserProfile.grade != "")
         .group_by(UserProfile.grade)
         .order_by(func.count(UserProfile.id).desc())
         .limit(8)
@@ -117,21 +127,29 @@ def build_teacher_stats(user: User, db: Session) -> dict[str, Any]:
     job_rows = (
         db.query(JobProfile.name, func.count(AnalysisRecord.id))
         .join(AnalysisRecord, AnalysisRecord.job_profile_id == JobProfile.id)
+        .filter(JobProfile.organization_id == org_id, AnalysisRecord.organization_id == org_id)
         .group_by(JobProfile.name)
         .order_by(func.count(AnalysisRecord.id).desc())
         .limit(8)
         .all()
     )
 
-    profile_count = db.query(UserProfile).filter(
-        (UserProfile.school != "") | (UserProfile.major != "") | (UserProfile.grade != "")
-    ).count()
+    profile_count = (
+        db.query(UserProfile)
+        .join(User, User.id == UserProfile.user_id)
+        .filter(
+            User.organization_id == org_id,
+            User.role == "user",
+            (UserProfile.school != "") | (UserProfile.major != "") | (UserProfile.grade != ""),
+        )
+        .count()
+    )
 
     major_score_rows = (
         db.query(UserProfile.major, func.avg(AnalysisRecord.total_score), func.count(AnalysisRecord.id))
         .join(User, User.id == UserProfile.user_id)
         .join(AnalysisRecord, AnalysisRecord.user_id == User.id)
-        .filter(success_filter, UserProfile.major != "")
+        .filter(success_filter, User.organization_id == org_id, User.role == "user", UserProfile.major != "")
         .group_by(UserProfile.major)
         .order_by(func.count(AnalysisRecord.id).desc())
         .limit(8)
@@ -141,7 +159,7 @@ def build_teacher_stats(user: User, db: Session) -> dict[str, Any]:
         db.query(UserProfile.grade, func.avg(AnalysisRecord.total_score), func.count(AnalysisRecord.id))
         .join(User, User.id == UserProfile.user_id)
         .join(AnalysisRecord, AnalysisRecord.user_id == User.id)
-        .filter(success_filter, UserProfile.grade != "")
+        .filter(success_filter, User.organization_id == org_id, User.role == "user", UserProfile.grade != "")
         .group_by(UserProfile.grade)
         .order_by(func.count(AnalysisRecord.id).desc())
         .limit(8)
@@ -151,7 +169,7 @@ def build_teacher_stats(user: User, db: Session) -> dict[str, Any]:
         db.query(UserProfile.class_name, func.avg(AnalysisRecord.total_score), func.count(AnalysisRecord.id))
         .join(User, User.id == UserProfile.user_id)
         .join(AnalysisRecord, AnalysisRecord.user_id == User.id)
-        .filter(success_filter, UserProfile.class_name != "")
+        .filter(success_filter, User.organization_id == org_id, User.role == "user", UserProfile.class_name != "")
         .group_by(UserProfile.class_name)
         .order_by(func.count(AnalysisRecord.id).desc())
         .limit(10)
@@ -197,7 +215,7 @@ def build_teacher_stats(user: User, db: Session) -> dict[str, Any]:
             {"name": name or "未填写", "avg_score": round(float(avg or 0), 1), "count": int(count)}
             for name, avg, count in grade_score_rows
         ],
-        "by_class": teacher_class_distribution(db),
+        "by_class": teacher_class_distribution(db, org_id),
         "score_by_class": [
             {"name": name or "未填写", "avg_score": round(float(avg or 0), 1), "count": int(count)}
             for name, avg, count in class_score_rows
@@ -206,13 +224,14 @@ def build_teacher_stats(user: User, db: Session) -> dict[str, Any]:
     }
 
 
-def list_admin_users(db: Session) -> list[dict[str, Any]]:
+def list_admin_users(db: Session, organization_id: int) -> list[dict[str, Any]]:
     rows = (
         db.query(
             User,
             func.count(func.distinct(AnalysisRecord.id)).label("record_count"),
             func.count(func.distinct(BatchTask.id)).label("batch_count"),
         )
+        .filter(User.organization_id == organization_id)
         .outerjoin(AnalysisRecord, AnalysisRecord.user_id == User.id)
         .outerjoin(BatchTask, BatchTask.user_id == User.id)
         .group_by(User.id)
@@ -222,10 +241,11 @@ def list_admin_users(db: Session) -> list[dict[str, Any]]:
     return [admin_user_payload(user, record_count, batch_count) for user, record_count, batch_count in rows]
 
 
-def list_admin_records(db: Session) -> list[dict[str, Any]]:
+def list_admin_records(db: Session, organization_id: int) -> list[dict[str, Any]]:
     rows = (
         db.query(AnalysisRecord, User)
         .join(User, User.id == AnalysisRecord.user_id)
+        .filter(AnalysisRecord.organization_id == organization_id, User.organization_id == organization_id)
         .order_by(AnalysisRecord.created_at.desc())
         .limit(500)
         .all()

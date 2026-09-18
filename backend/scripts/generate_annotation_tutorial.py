@@ -9,7 +9,6 @@ from docx import Document
 from docx.enum.text import WD_ALIGN_PARAGRAPH
 from docx.shared import Inches, Pt
 
-
 ROOT = Path(__file__).resolve().parents[2]
 OUT = ROOT / "docs" / "testing" / "实验数据标注详细教程.docx"
 

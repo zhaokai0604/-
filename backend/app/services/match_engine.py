@@ -6,8 +6,8 @@ import os
 import re
 from typing import Any
 
+from app.services.job_profiles import JOB_PROFILES
 from app.services.pipeline_utils import expand_keyword_variants, resume_contains_keyword
-from app.services.score_engine import JOB_PROFILES
 from app.services.semantic_match import semantic_similarity
 
 

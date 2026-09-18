@@ -458,7 +458,7 @@ def enhance_rewrite_with_ai(
         f"待优化原文：{originals}\n"
     )
     if offline_samples:
-        prompt += f"离线改写参考（请在此基础上润色，不要简单复述诊断）：\n" + "\n".join(offline_samples) + "\n"
+        prompt += "离线改写参考（请在此基础上润色，不要简单复述诊断）：\n" + "\n".join(offline_samples) + "\n"
     prompt += f"简历摘要：{resume_text[:3000]}"
 
     try:

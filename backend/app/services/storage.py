@@ -6,7 +6,6 @@ from fastapi import HTTPException, UploadFile
 
 from app.core.config import settings
 
-
 ALLOWED_SINGLE_EXTENSIONS = {".docx", ".pdf"}
 ALLOWED_ZIP_EXTENSIONS = {".zip"}
 
@@ -29,10 +28,15 @@ def validate_upload(filename: str, size: int, allow_zip: bool = False) -> None:
 
 
 def save_upload_bytes(content: bytes, filename: str, directory: Path | None = None) -> Path:
-    directory = directory or settings.uploads_dir
-    directory.mkdir(parents=True, exist_ok=True)
     suffix = safe_suffix(filename)
     validate_upload(filename, len(content), allow_zip=suffix == ".zip")
+    if directory is None:
+        from app.services.blob_store import get_blob_store
+
+        category = "uploads"
+        stored_ref = get_blob_store().put_bytes(content, filename, category=category)
+        return Path(stored_ref)
+    directory.mkdir(parents=True, exist_ok=True)
     stored_name = f"{uuid.uuid4().hex}{suffix}"
     stored_path = directory / stored_name
     stored_path.write_bytes(content)
@@ -50,12 +54,8 @@ def remove_path(path_value: str | Path | None) -> None:
     path = Path(path_value)
     try:
         resolved = path.resolve()
-        allowed_roots = [
-            settings.uploads_dir.resolve(),
-            settings.extracted_dir.resolve(),
-            settings.reports_dir.resolve(),
-        ]
-        if not any(resolved == root or resolved.is_relative_to(root) for root in allowed_roots):
+        allowed_roots = _allowed_data_roots()
+        if not _path_under_allowed_roots(resolved, allowed_roots):
             return
         if resolved.is_dir():
             shutil.rmtree(resolved, ignore_errors=True)
@@ -63,3 +63,35 @@ def remove_path(path_value: str | Path | None) -> None:
             resolved.unlink()
     except OSError:
         return
+
+
+def _allowed_data_roots() -> list[Path]:
+    return [
+        settings.uploads_dir.resolve(),
+        settings.extracted_dir.resolve(),
+        settings.reports_dir.resolve(),
+    ]
+
+
+def _path_under_allowed_roots(resolved: Path, allowed_roots: list[Path] | None = None) -> bool:
+    roots = allowed_roots or _allowed_data_roots()
+    return any(resolved == root or resolved.is_relative_to(root) for root in roots)
+
+
+def resolve_allowed_data_path(path_value: str | Path) -> Path:
+    """Resolve a stored file path and ensure it stays under data/ roots."""
+    path = Path(path_value)
+    try:
+        resolved = path.resolve()
+    except OSError as exc:
+        raise HTTPException(status_code=404, detail="文件不存在。") from exc
+    if not _path_under_allowed_roots(resolved):
+        raise HTTPException(status_code=404, detail="文件不存在。")
+    if not resolved.is_file():
+        raise HTTPException(status_code=404, detail="文件不存在。")
+    return resolved
+
+
+def safe_download_filename(name: str, fallback: str = "download") -> str:
+    cleaned = Path(str(name or "")).name.strip() or fallback
+    return cleaned.replace('"', "").replace("\r", "").replace("\n", "")[:200]

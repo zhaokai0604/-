@@ -2,7 +2,6 @@ import re
 from pathlib import Path
 from typing import Any
 
-
 SECTION_KEYS = [
     "basic_info",
     "education",
@@ -1380,7 +1379,6 @@ def _is_project_line(line: str) -> bool:
         return False
     # 公众号、拍摄、海报等也常出现在实习/校园职责中，不能单独作为项目证据。
     weak_media_signal = re.search(r"(账号|视频号|公众号|社群|短片|海报|片头|包装|拍摄|小红书|抖音|微博)", line)
-    explicit_project_signal = re.search(r"(项目|实训|课题|系统|平台|小程序|网站|作品|案例|毕业设计|项目经历|项目经验)", line)
     strong_media_project = re.search(r"(公众号|账号|视频号|小红书|抖音|微博).{0,30}(项目|运营项目|账号项目)", line)
     if weak_media_signal and not strong_media_project and not re.search(r"(运营项目|账号项目)", line):
         return False

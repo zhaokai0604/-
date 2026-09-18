@@ -2,8 +2,9 @@
 
 from typing import Any
 
+from app.services.job_profiles import JOB_PROFILES
 from app.services.match_engine import match_job
-from app.services.score_engine import JOB_PROFILES, WEIGHTS, build_evidence, label_for_score, score_resume
+from app.services.score_engine import WEIGHTS, build_evidence, label_for_score, score_resume
 from app.services.suggestion_engine import build_diagnosis, build_structured_suggestions, build_suggestions
 
 __all__ = [

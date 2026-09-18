@@ -10,11 +10,11 @@
 
 from __future__ import annotations
 
+import argparse
 import json
 import math
 import os
 import sys
-import argparse
 from collections import Counter
 from pathlib import Path
 

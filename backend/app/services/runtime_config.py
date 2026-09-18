@@ -4,7 +4,6 @@ from typing import Any
 
 from app.core.config import settings
 
-
 AI_PROVIDER_OPTIONS = {"deepseek", "openai_compatible"}
 
 

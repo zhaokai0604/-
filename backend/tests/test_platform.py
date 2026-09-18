@@ -1,4 +1,3 @@
-import pytest
 
 from fastapi.testclient import TestClient
 
@@ -299,6 +298,54 @@ def test_legacy_detected_target_repair_does_not_recalculate_scores(client, monke
             "highlight_strength": 57,
             "job_match": 55,
         }
-        assert second["target_position"] == ""
-        assert second["target_position_source"] == "generic"
+        assert first["target_position"] == "新媒体运营"
+        assert second["target_position"] == "新媒体运营"
+
+        from app.services.record_maintenance import repair_legacy_records_batch
+
+        repair_legacy_records_batch(db, limit=10)
+        db.refresh(record)
+        repaired = record_to_response(record, include_detail=True, db=db)
+
+        assert repaired["total_score"] == 59
+        assert repaired["scores"] == first["scores"]
+        assert repaired["target_position"] == ""
+        assert repaired["target_position_source"] == "generic"
         assert loads(record.match_result_json, {})["target_source"] == "generic"
+
+
+def test_guest_record_versions_respect_session_isolation(client: TestClient):
+    session_a = "version-guest-a"
+    session_b = "version-guest-b"
+    with SessionLocal() as db:
+        guest = db.query(User).filter(User.username == "guest").first()
+        assert guest is not None
+        root = AnalysisRecord(
+            user_id=guest.id,
+            guest_session_id=session_a,
+            original_filename="v1.docx",
+            version_no=1,
+            status="success",
+            total_score=80,
+        )
+        db.add(root)
+        db.flush()
+        root.root_record_id = root.id
+        db.add(
+            AnalysisRecord(
+                user_id=guest.id,
+                guest_session_id=session_b,
+                original_filename="other.docx",
+                root_record_id=root.id,
+                version_no=2,
+                status="success",
+                total_score=70,
+            )
+        )
+        db.commit()
+        record_id = root.id
+
+    versions = client.get(f"/api/history/{record_id}/versions", cookies=_guest_cookies(session_a))
+    assert versions.status_code == 200
+    assert len(versions.json()["versions"]) == 1
+    assert versions.json()["versions"][0]["filename"] == "v1.docx"

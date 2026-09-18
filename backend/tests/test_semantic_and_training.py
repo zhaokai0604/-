@@ -1,9 +1,8 @@
 import json
-import os
 
+from app.services import semantic_match
 from app.services.match_engine import match_job
 from app.services.semantic_match import clear_semantic_caches, fuse_match_scores, semantic_similarity
-from app.services import semantic_match
 from app.services.teacher_training import build_training_task_from_issue
 
 

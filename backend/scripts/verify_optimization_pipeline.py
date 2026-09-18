@@ -24,7 +24,6 @@ from docx import Document
 from app.services.analysis_pipeline import run_analysis_pipeline
 from app.services.report import generate_rewrite_report
 
-
 SAMPLE_TEXT = """张三
 电话：13800000000 邮箱：zhangsan@example.com
 求职意向：数据分析师
@@ -70,7 +69,7 @@ def main() -> int:
         low_snr = result.get("low_snr_zones") or []
 
         checks = {
-            "total_score": isinstance(result.get("total_score"), (int, float)),
+            "total_score": isinstance(result.get("total_score"), int | float),
             "has_scores": bool(result.get("scores")),
             "has_optimized": bool(optimized.get("sections") or optimized.get("document_text")),
             "has_diffs": bool(optimized.get("diffs")),

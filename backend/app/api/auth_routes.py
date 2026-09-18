@@ -3,28 +3,26 @@ from typing import Any
 from fastapi import APIRouter, Depends, Request, Response
 from sqlalchemy.orm import Session
 
-from app.api.platform import auth_response, import_guest_records, set_session_cookie, user_payload, write_audit
+from app.api.platform import auth_response, import_guest_records, set_session_cookie
+from app.api.request_limits import enforce_auth_rate_limit
 from app.api.schemas import LoginRequest, RegisterRequest
 from app.core.config import settings
 from app.core.database import get_db
 from app.models.entities import AuditLog, User
-from app.services.auth import hash_password, normalize_username, password_strength, validate_password_strength, validate_username, verify_password
-from app.services.rate_limit import check_rate_limit
+from app.services.auth import (
+    hash_password,
+    normalize_username,
+    password_strength,
+    validate_password_strength,
+    validate_username,
+    verify_password,
+)
 
 router = APIRouter()
 
 
 def _enforce_auth_rate_limit(request: Request) -> None:
-    import os
-
-    if os.getenv("PYTEST_CURRENT_TEST"):
-        return
-    from app.api.platform import client_ip
-    from fastapi import HTTPException
-
-    ip = client_ip(request) or "unknown"
-    if not check_rate_limit(f"auth:{ip}", limit=20, window_seconds=60):
-        raise HTTPException(status_code=429, detail="登录/注册请求过于频繁，请稍后再试。")
+    enforce_auth_rate_limit(request)
 
 
 @router.post("/auth/register")
@@ -42,7 +40,14 @@ def register(payload: RegisterRequest, request: Request, response: Response, db:
 
         raise HTTPException(status_code=400, detail="用户名已存在")
     display_name = payload.display_name.strip()[:100] or username
-    user = User(username=username, display_name=display_name, password_hash=hash_password(payload.password), role="user", status="active")
+    user = User(
+        username=username,
+        display_name=display_name,
+        password_hash=hash_password(payload.password),
+        role="user",
+        status="active",
+        organization_id=settings.default_organization_id,
+    )
     db.add(user)
     db.commit()
     db.refresh(user)
@@ -54,9 +59,10 @@ def register(payload: RegisterRequest, request: Request, response: Response, db:
 
 @router.post("/auth/login")
 def login(payload: LoginRequest, request: Request, response: Response, db: Session = Depends(get_db)) -> dict[str, Any]:
-    from app.utils.time import utc_now
     from fastapi import HTTPException
+
     from app.api.platform import client_ip
+    from app.utils.time import utc_now
 
     _enforce_auth_rate_limit(request)
     username = normalize_username(payload.username)

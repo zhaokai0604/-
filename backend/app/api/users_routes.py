@@ -6,7 +6,7 @@ from sqlalchemy.orm import Session
 from app.api.platform import current_user_from_request, user_payload
 from app.api.schemas import UserProfileRequest
 from app.core.database import get_db
-from app.models.entities import User, UserProfile
+from app.models.entities import UserProfile
 
 router = APIRouter()
 

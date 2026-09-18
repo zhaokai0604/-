@@ -11,7 +11,6 @@ from fastapi import HTTPException
 
 from app.core.config import settings
 
-
 USERNAME_PATTERN = re.compile(r"^[A-Za-z0-9_-]{3,30}$")
 PASSWORD_HASH_ALGORITHM = "pbkdf2_sha256"
 PASSWORD_HASH_ITERATIONS = 310_000

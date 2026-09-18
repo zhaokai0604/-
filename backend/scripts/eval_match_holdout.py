@@ -16,9 +16,10 @@ ROOT = Path(__file__).resolve().parents[1]
 PROJECT_ROOT = ROOT.parent
 sys.path.insert(0, str(ROOT))
 
+from eval_match_baseline import spearman  # noqa: E402
+
 from app.services.match_engine import match_job  # noqa: E402
 from app.services.semantic_match import clear_semantic_caches, semantic_similarity  # noqa: E402
-from eval_match_baseline import spearman  # noqa: E402
 
 
 def main() -> int:

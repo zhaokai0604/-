@@ -47,22 +47,56 @@ def test_analyze_direct_stream_then_live_persist(client: TestClient, tmp_path):
     assert body.get("status") == "processing"
     record_id = body["record_id"]
 
-    # stream=true 时不应被后台立刻跑完
+    # 真实环境 POST 会立即返回；TestClient 会同步跑完 BackgroundTasks（含 12s 兜底等待），可能已是 success。
     status = client.get(f"/api/history/{record_id}/status")
     assert status.status_code == 200
-    assert status.json()["status"] == "processing"
+    current_status = status.json()["status"]
+    assert current_status in {"processing", "success"}
 
-    with client.stream("GET", f"/api/history/{record_id}/analysis-live") as stream:
-        assert stream.status_code == 200
-        text = "".join(stream.iter_text())
-    assert "event: done" in text
-    assert "已落库" in text or "persisted" in text
+    if current_status == "processing":
+        with client.stream("GET", f"/api/history/{record_id}/analysis-live") as stream:
+            assert stream.status_code == 200
+            text = "".join(stream.iter_text())
+        assert "event: done" in text
+        assert "已落库" in text or "persisted" in text
 
     detail = client.get(f"/api/history/{record_id}")
     assert detail.status_code == 200
     payload = detail.json()
     assert payload["status"] == "success"
     assert payload["total_score"] > 0
+
+
+def test_stream_upload_dispatches_background_fallback(client: TestClient, monkeypatch, tmp_path):
+    _register(client)
+    dispatched: list[int] = []
+
+    def spy_dispatch(background_tasks, record_id: int) -> None:
+        dispatched.append(record_id)
+
+    monkeypatch.setattr("app.api.analysis_routes.dispatch_single_analysis", spy_dispatch)
+
+    resume = tmp_path / "cv-fallback.docx"
+    from docx import Document
+
+    doc = Document()
+    doc.add_paragraph("张三")
+    doc.add_paragraph("Python 数据分析")
+    doc.save(resume)
+
+    created = client.post(
+        "/api/resumes/analyze-direct",
+        json={
+            "filename": "cv-fallback.docx",
+            "content_base64": base64.b64encode(resume.read_bytes()).decode("ascii"),
+            "target_position": "数据分析师",
+            "enable_ai": False,
+            "stream": True,
+        },
+    )
+    assert created.status_code == 200
+    record_id = created.json()["record_id"]
+    assert dispatched == [record_id]
 
 
 def test_direct_target_payload_is_ignored_when_matching_disabled(client: TestClient, tmp_path):

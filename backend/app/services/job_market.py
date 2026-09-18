@@ -10,7 +10,6 @@ from typing import Any
 
 from app.services.pipeline_utils import expand_keyword_variants, resume_contains_keyword
 
-
 CORPUS_PATH = Path(__file__).resolve().parents[3] / "data" / "job_market" / "public_job_samples.jsonl"
 FALLBACK_LABEL = "offline_rules_fallback"
 # 有手动岗位时：在岗位语境下检索，阈值可稍低

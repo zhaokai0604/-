@@ -15,13 +15,28 @@ from app.api.platform import (
     user_payload,
     write_audit,
 )
-from app.api.schemas import AdminAiConfigRequest, AdminScoreConfigRequest, ResetPasswordRequest, StorageCleanupRequest, UserRoleRequest, UserStatusRequest
+from app.api.schemas import (
+    AdminAiConfigRequest,
+    AdminScoreConfigRequest,
+    ClassRosterImportRequest,
+    ResetPasswordRequest,
+    StorageCleanupRequest,
+    UserRoleRequest,
+    UserStatusRequest,
+)
 from app.core.config import settings
 from app.core.database import get_db
 from app.models.entities import AnalysisRecord, JobProfile, User
 from app.services.auth import hash_password, validate_password_strength
-from app.services.runtime_config import get_ai_runtime_config, get_score_runtime_config, update_ai_runtime_config, update_score_runtime_config
+from app.services.class_roster import import_class_roster
 from app.services.file_lifecycle import cleanup_orphan_files
+from app.services.organization import organization_id_for_user
+from app.services.runtime_config import (
+    get_ai_runtime_config,
+    get_score_runtime_config,
+    update_ai_runtime_config,
+    update_score_runtime_config,
+)
 
 router = APIRouter()
 
@@ -52,10 +67,32 @@ def admin_stats(request: Request, db: Session = Depends(get_db)) -> dict[str, An
     return build_admin_stats(admin, db)
 
 
+@router.post("/admin/roster/import")
+def admin_import_roster(payload: ClassRosterImportRequest, request: Request, db: Session = Depends(get_db)) -> dict[str, Any]:
+    admin = require_admin(request, db)
+    result = import_class_roster(
+        db,
+        admin,
+        [row.model_dump() for row in payload.rows],
+        create_missing=payload.create_missing,
+    )
+    write_audit(
+        db,
+        admin,
+        request,
+        "admin.roster.import",
+        "organization",
+        organization_id_for_user(admin),
+        {"created": result["created"], "updated": result["updated"], "skipped": result["skipped"]},
+    )
+    db.commit()
+    return result
+
+
 @router.get("/admin/users")
 def admin_users(request: Request, db: Session = Depends(get_db)) -> list[dict[str, Any]]:
-    require_admin(request, db)
-    return list_admin_users(db)
+    admin = require_admin(request, db)
+    return list_admin_users(db, organization_id_for_user(admin))
 
 
 @router.patch("/admin/users/{user_id}/status")
@@ -122,8 +159,8 @@ def admin_reset_user_password(user_id: int, payload: ResetPasswordRequest, reque
 
 @router.get("/admin/records")
 def admin_records(request: Request, db: Session = Depends(get_db)) -> list[dict[str, Any]]:
-    require_admin(request, db)
-    return list_admin_records(db)
+    admin = require_admin(request, db)
+    return list_admin_records(db, organization_id_for_user(admin))
 
 
 @router.delete("/admin/records/{record_id}")

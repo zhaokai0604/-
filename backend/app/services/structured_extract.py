@@ -18,7 +18,6 @@ from typing import Any
 
 from app.core.config import settings
 
-
 DATE_RE = re.compile(r"(?:20\d{2}|19\d{2})[./年-]?\s*(?:0?[1-9]|1[0-2])?")
 METRIC_RE = re.compile(r"\d+(?:\.\d+)?\s*(?:%|人|次|个|项|篇|条|小时|天|周|月|元|w\+?|W\+?|万|k\+?|K\+?)")
 DATE_RANGE_RE = re.compile(

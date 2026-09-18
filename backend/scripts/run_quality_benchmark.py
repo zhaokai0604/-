@@ -10,14 +10,13 @@ import argparse
 import hashlib
 import json
 import os
-import re
 import subprocess
 import sys
 import time
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from pathlib import Path
 from statistics import mean
-from typing import Any, Callable
+from typing import Any
 
 os.environ.setdefault("DATABASE_URL", "sqlite:///:memory:")
 os.environ.setdefault("SESSION_SECRET", "quality-benchmark-secret")
@@ -27,12 +26,13 @@ PROJECT_ROOT = ROOT.parent
 sys.path.insert(0, str(ROOT))
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
+from _resume_corpus_common import extract_text, iter_resume_files  # noqa: E402
+
 from app.services.analysis_pipeline import run_analysis_pipeline  # noqa: E402
 from app.services.match_engine import match_job  # noqa: E402
-from app.services.parser import detect_sections, parse_resume  # noqa: E402
+from app.services.parser import detect_sections  # noqa: E402
 from app.services.pipeline_utils import normalize_sections  # noqa: E402
 from app.services.semantic_match import semantic_similarity  # noqa: E402
-from _resume_corpus_common import extract_text, iter_resume_files  # noqa: E402
 
 
 def percentile(values: list[float], ratio: float) -> float:
@@ -227,7 +227,7 @@ def run_real_corpus(corpus: Path) -> dict[str, Any]:
         try:
             output = run_analysis_pipeline(path, "", "", False)
             result = output.get("result") or {}
-            if isinstance(result.get("total_score"), (int, float)) and result.get("scores"):
+            if isinstance(result.get("total_score"), int | float) and result.get("scores"):
                 analysis_ok += 1
             quality = str(result.get("parse_quality") or "unknown")
             quality_counts[quality] = quality_counts.get(quality, 0) + 1

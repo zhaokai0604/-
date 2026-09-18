@@ -1,7 +1,6 @@
-from app.services.analysis_pipeline import resolve_effective_ai
-from app.services.analysis_pipeline import run_analysis_pipeline
 from app.api.serializers import public_analysis_mode_label
 from app.services.ai import _parse_deepseek_json
+from app.services.analysis_pipeline import resolve_effective_ai, run_analysis_pipeline
 
 
 def test_public_analysis_mode_label_hides_internal_core_when_ai_requested():

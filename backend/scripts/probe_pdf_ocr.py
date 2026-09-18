@@ -29,7 +29,8 @@ def main() -> int:
         ocr += int(bool(improved.strip()))
         if not improved.strip():
             failed.append(path.name)
-    rate = lambda value: round(value / len(files), 4) if files else 0.0
+    def rate(value: int) -> float:
+        return round(value / len(files), 4) if files else 0.0
     result = {
         "pdf_files": len(files),
         "native_text_ok": native,

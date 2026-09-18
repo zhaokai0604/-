@@ -12,6 +12,11 @@ logs/
 *.tar
 *.tar.gz
 .superpowers/
+.arts/
+.codeartsdoer/
+.cursor/
+.review_docx/
+.review_video/
 data/uploads/*
 data/extracted/*
 data/reports/*

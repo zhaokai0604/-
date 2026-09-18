@@ -2,7 +2,6 @@ from __future__ import annotations
 
 from typing import Any
 
-
 JOB_PROFILE_PRESETS: list[dict[str, str]] = [
     {
         "id": "frontend_engineer",

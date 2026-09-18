@@ -1,14 +1,20 @@
 import base64
 import binascii
 import logging
-from pathlib import Path
 from typing import Any
 
 from fastapi import APIRouter, BackgroundTasks, Depends, File, Form, HTTPException, Request, UploadFile
 from fastapi.responses import FileResponse, StreamingResponse
 from sqlalchemy.orm import Session
 
-from app.api.actor import actor_guest_session_value, batch_owned_by_actor, record_owned_by_actor, resolve_actor, scope_batches, scope_records
+from app.api.actor import (
+    actor_guest_session_value,
+    batch_owned_by_actor,
+    record_owned_by_actor,
+    resolve_actor,
+    scope_batches,
+    scope_records,
+)
 from app.api.platform import (
     batch_to_response,
     build_version_compare,
@@ -22,12 +28,13 @@ from app.api.platform import (
     resume_media_type,
     retry_single_analysis,
 )
+from app.api.request_limits import enforce_upload_rate_limit
 from app.api.schemas import ApplyRecommendedJobRequest, BulkDeleteHistoryRequest, DirectResumeAnalyzeRequest
 from app.api.task_dispatch import dispatch_batch_task, dispatch_single_analysis
 from app.core.config import settings
 from app.core.database import get_db
 from app.models.entities import AnalysisRecord, BatchTask, UploadedFile
-from app.services.storage import save_upload_bytes, validate_upload
+from app.services.storage import resolve_allowed_data_path, safe_download_filename, save_upload_bytes, validate_upload
 from app.tasks.celery_app import celery_enabled
 from app.utils.json_tools import dumps
 
@@ -43,7 +50,9 @@ def resume_template_catalog() -> dict[str, Any]:
 
 
 @router.get("/health")
-def health(db: Session = Depends(get_db)) -> dict[str, str]:
+def health(db: Session = Depends(get_db)) -> dict[str, Any]:
+    import shutil
+
     from sqlalchemy import text
 
     db_status = "ok"
@@ -64,17 +73,27 @@ def health(db: Session = Depends(get_db)) -> dict[str, str]:
             redis_status = "error"
 
     worker_status = "celery" if celery_enabled() else "background_tasks"
-    # 数据库挂了才算整体异常；Redis 仅在启用 Celery 时影响健康度。
-    # 本地 USE_CELERY=false 时走进程内后台，Redis 连不上不应把「后端」标成异常。
     overall = "ok" if db_status == "ok" else "degraded"
     if redis_status == "error" and celery_enabled():
         overall = "degraded"
 
+    disk_free_mb = None
+    try:
+        usage = shutil.disk_usage(settings.data_dir)
+        disk_free_mb = round(usage.free / (1024 * 1024), 1)
+        if disk_free_mb < 512:
+            overall = "degraded"
+    except OSError:
+        disk_free_mb = None
+
     return {
         "status": overall,
+        "version": settings.app_version,
+        "environment": settings.app_env,
         "database": db_status,
         "redis": redis_status,
         "worker": worker_status,
+        "disk_free_mb": disk_free_mb,
         "mode": "ai_first",
         "fallback": "offline_rules",
     }
@@ -96,8 +115,9 @@ async def analyze_single(
 ) -> dict[str, Any]:
     content = await file.read()
     validate_upload(file.filename or "", len(content), allow_zip=False)
-    stored_path = save_upload_bytes(content, file.filename or "")
     actor = resolve_actor(request, db)
+    enforce_upload_rate_limit(request, actor)
+    stored_path = save_upload_bytes(content, file.filename or "")
     logger.info(
         "analysis_request endpoint=upload stream=%s target_match_enabled=%s target_position_present=%s jd_length=%s profile_id=%s",
         bool(stream),
@@ -126,9 +146,8 @@ async def analyze_single(
             target_match_enabled=target_match_enabled,
             stream=stream,
         )
-        # 流式任务由 analysis-live 认领，避免响应返回前后台任务抢先完成。
-        if not stream:
-            dispatch_single_analysis(background_tasks, record.id)
+        # stream 时由 analysis-live 优先认领；后台任务等待 live_claimed 超时后再兜底，避免 SSE 断连卡死。
+        dispatch_single_analysis(background_tasks, record.id)
         payload = record_to_response(record, include_detail=False, db=db)
         payload["async"] = True
         payload["stream"] = bool(stream)
@@ -153,8 +172,9 @@ async def analyze_single_direct(
         raise HTTPException(status_code=400, detail="上传文件编码无效。") from exc
 
     validate_upload(payload.filename or "", len(content), allow_zip=False)
-    stored_path = save_upload_bytes(content, payload.filename or "")
     actor = resolve_actor(request, db)
+    enforce_upload_rate_limit(request, actor)
+    stored_path = save_upload_bytes(content, payload.filename or "")
     logger.info(
         "analysis_request endpoint=direct stream=%s target_match_enabled=%s target_position_present=%s jd_length=%s profile_id=%s",
         bool(payload.stream),
@@ -183,8 +203,7 @@ async def analyze_single_direct(
             target_match_enabled=payload.target_match_enabled,
             stream=payload.stream,
         )
-        if not payload.stream:
-            dispatch_single_analysis(background_tasks, record.id)
+        dispatch_single_analysis(background_tasks, record.id)
         response = record_to_response(record, include_detail=False, db=db)
         response["async"] = True
         response["stream"] = bool(payload.stream)
@@ -210,6 +229,7 @@ async def analyze_zip(
     if not (file.filename or "").lower().endswith(".zip"):
         raise HTTPException(status_code=400, detail="批量分析只接受 .zip 文件。")
     actor = resolve_actor(request, db)
+    enforce_upload_rate_limit(request, actor)
     existing_batch = (
         scope_batches(db.query(BatchTask), actor)
         .filter(BatchTask.status.in_(["pending", "processing"]))
@@ -229,6 +249,7 @@ async def analyze_zip(
     guest_session_id = actor_guest_session_value(actor)
     batch = BatchTask(
         user_id=actor.user.id,
+        organization_id=actor.organization_id,
         guest_session_id=guest_session_id,
         job_profile_id=resolved_profile.id if resolved_profile else None,
         zip_filename=file.filename or zip_path.name,
@@ -242,6 +263,7 @@ async def analyze_zip(
     db.add(
         UploadedFile(
             user_id=actor.user.id,
+            organization_id=actor.organization_id,
             guest_session_id=guest_session_id,
             batch_task_id=batch.id,
             original_filename=file.filename or zip_path.name,
@@ -582,14 +604,12 @@ def download_source_resume(record_id: int, request: Request, db: Session = Depen
     source_file = get_source_resume_file(db, record.id, record.user_id)
     if not source_file:
         raise HTTPException(status_code=404, detail="原始简历文件不存在。")
-    path = Path(source_file.stored_path)
-    if not path.exists():
-        raise HTTPException(status_code=404, detail="原始简历文件不存在。")
-    media_type = resume_media_type(path.suffix.lower())
+    safe_path = resolve_allowed_data_path(source_file.stored_path)
+    media_type = resume_media_type(safe_path.suffix.lower())
     # 原始文件属于用户私有材料：允许下载，但使用用户上传时的文件名，避免暴露服务器 UUID。
     return FileResponse(
-        path,
+        safe_path,
         media_type=media_type,
-        filename=source_file.original_filename or path.name,
+        filename=safe_download_filename(source_file.original_filename, safe_path.name),
         content_disposition_type="attachment",
     )

@@ -6,7 +6,6 @@ import argparse
 import json
 from pathlib import Path
 
-
 FIELDS = ("gold_sections", "parse_quality", "resume_quality", "issue_types")
 
 

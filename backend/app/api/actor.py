@@ -7,14 +7,16 @@ from sqlalchemy.orm import Query, Session
 
 from app.core.config import settings
 from app.core.database import ensure_guest_user
-from app.models.entities import AnalysisRecord, BatchTask, JobProfile, Report, UploadedFile, User
+from app.models.entities import AnalysisRecord, BatchTask, JobProfile, Report, User
 from app.services.auth import parse_session_token
+from app.services.organization import organization_id_for_user
 
 
 @dataclass
 class ActorContext:
     user: User
     guest_session_id: str | None = None
+    organization_id: int = 1
 
     @property
     def is_guest(self) -> bool:
@@ -37,10 +39,14 @@ def current_user_from_request(request: Request, db: Session) -> User | None:
 def resolve_actor(request: Request, db: Session) -> ActorContext:
     user = current_user_from_request(request, db)
     if user:
-        return ActorContext(user=user)
+        return ActorContext(user=user, organization_id=organization_id_for_user(user))
     guest = ensure_guest_user(db, User)
     session_id = getattr(request.state, "guest_session_id", None)
-    return ActorContext(user=guest, guest_session_id=session_id)
+    return ActorContext(
+        user=guest,
+        guest_session_id=session_id,
+        organization_id=organization_id_for_user(guest),
+    )
 
 
 def guest_session_id_from_request(request: Request) -> str | None:
@@ -48,6 +54,7 @@ def guest_session_id_from_request(request: Request) -> str | None:
 
 
 def scope_records(query: Query, actor: ActorContext) -> Query:
+    query = query.filter(AnalysisRecord.organization_id == actor.organization_id)
     query = query.filter(AnalysisRecord.user_id == actor.user.id)
     if actor.is_guest:
         if actor.guest_session_id:
@@ -58,6 +65,7 @@ def scope_records(query: Query, actor: ActorContext) -> Query:
 
 
 def scope_batches(query: Query, actor: ActorContext) -> Query:
+    query = query.filter(BatchTask.organization_id == actor.organization_id)
     query = query.filter(BatchTask.user_id == actor.user.id)
     if actor.is_guest:
         if actor.guest_session_id:
@@ -68,6 +76,7 @@ def scope_batches(query: Query, actor: ActorContext) -> Query:
 
 
 def scope_reports(query: Query, actor: ActorContext) -> Query:
+    query = query.filter(Report.organization_id == actor.organization_id)
     query = query.filter(Report.user_id == actor.user.id)
     if actor.is_guest:
         if actor.guest_session_id:
@@ -82,6 +91,7 @@ def actor_guest_session_value(actor: ActorContext) -> str | None:
 
 
 def scope_job_profiles(query: Query, actor: ActorContext) -> Query:
+    query = query.filter(JobProfile.organization_id == actor.organization_id)
     query = query.filter(JobProfile.user_id == actor.user.id)
     if actor.is_guest:
         if actor.guest_session_id:
@@ -94,7 +104,7 @@ def scope_job_profiles(query: Query, actor: ActorContext) -> Query:
 
 
 def job_profile_owned_by_actor(profile: JobProfile, actor: ActorContext) -> bool:
-    if profile.user_id != actor.user.id:
+    if profile.organization_id != actor.organization_id or profile.user_id != actor.user.id:
         return False
     if actor.is_guest:
         return bool(actor.guest_session_id) and profile.guest_session_id == actor.guest_session_id
@@ -102,7 +112,7 @@ def job_profile_owned_by_actor(profile: JobProfile, actor: ActorContext) -> bool
 
 
 def record_owned_by_actor(record: AnalysisRecord, actor: ActorContext) -> bool:
-    if record.user_id != actor.user.id:
+    if record.organization_id != actor.organization_id or record.user_id != actor.user.id:
         return False
     if actor.is_guest:
         return bool(actor.guest_session_id) and record.guest_session_id == actor.guest_session_id
@@ -110,7 +120,7 @@ def record_owned_by_actor(record: AnalysisRecord, actor: ActorContext) -> bool:
 
 
 def batch_owned_by_actor(batch: BatchTask, actor: ActorContext) -> bool:
-    if batch.user_id != actor.user.id:
+    if batch.organization_id != actor.organization_id or batch.user_id != actor.user.id:
         return False
     if actor.is_guest:
         return bool(actor.guest_session_id) and batch.guest_session_id == actor.guest_session_id

@@ -4,7 +4,6 @@ import warnings
 from dataclasses import dataclass, field
 from functools import lru_cache
 from pathlib import Path
-from typing import List
 
 from app.core.env import is_production_like, load_project_env, project_root
 
@@ -17,9 +16,11 @@ _INSECURE_ADMIN_PASSWORDS = {"ResumeAi@2026", "ChangeThisDemoPassword1", ""}
 @dataclass
 class Settings:
     app_name: str = field(default_factory=lambda: os.getenv("APP_NAME", "简析智评——大学生简历诊断与求职成长平台"))
+    app_env: str = field(default_factory=lambda: os.getenv("APP_ENV", "development").strip().lower())
+    app_version: str = field(default_factory=lambda: os.getenv("APP_VERSION", "0.3.0").strip())
     project_root: Path = field(default_factory=project_root)
     database_url: str = field(default_factory=lambda: os.getenv("DATABASE_URL", ""))
-    allowed_origins: List[str] = field(default_factory=lambda: os.getenv("ALLOWED_ORIGINS", "http://localhost:5173,http://127.0.0.1:5173").split(","))
+    allowed_origins: list[str] = field(default_factory=lambda: os.getenv("ALLOWED_ORIGINS", "http://localhost:5173,http://127.0.0.1:5173").split(","))
     max_upload_size_mb: int = field(default_factory=lambda: int(os.getenv("MAX_UPLOAD_SIZE_MB", "20")))
     max_zip_total_size_mb: int = field(default_factory=lambda: int(os.getenv("MAX_ZIP_TOTAL_SIZE_MB", "120")))
     default_user_name: str = field(default_factory=lambda: os.getenv("DEFAULT_USER_NAME", "guest"))
@@ -42,7 +43,9 @@ class Settings:
     batch_parallel_workers: int = field(default_factory=lambda: max(1, min(int(os.getenv("BATCH_PARALLEL_WORKERS", "2")), 4)))
     wechat_app_id: str = field(default_factory=lambda: os.getenv("WECHAT_APP_ID", ""))
     wechat_app_secret: str = field(default_factory=lambda: os.getenv("WECHAT_APP_SECRET", ""))
-    wechat_redirect_uri: str = field(default_factory=lambda: os.getenv("WECHAT_REDIRECT_URI", ""))
+    default_organization_id: int = field(default_factory=lambda: int(os.getenv("DEFAULT_ORGANIZATION_ID", "1")))
+    default_organization_name: str = field(default_factory=lambda: os.getenv("DEFAULT_ORGANIZATION_NAME", "默认学校"))
+    blob_store: str = field(default_factory=lambda: os.getenv("BLOB_STORE", "local").strip().lower())
 
     @property
     def data_dir(self) -> Path:
@@ -91,6 +94,8 @@ def _validate_settings(settings: Settings) -> None:
         # here would silently break browser sessions instead of protecting them.
         if settings.public_base_url.lower().startswith("https://") and not settings.session_cookie_secure:
             raise RuntimeError("SESSION_COOKIE_SECURE must be true in production.")
+        if settings.use_celery and not settings.redis_url:
+            raise RuntimeError("USE_CELERY=true requires REDIS_URL in production.")
 
 
 @lru_cache

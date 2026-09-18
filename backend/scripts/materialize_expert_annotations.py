@@ -11,7 +11,6 @@ import re
 import sys
 from pathlib import Path
 
-
 GOLD = {
     "A-01": (["basic_info", "education", "campus", "skills", "summary"], "high", 4, ["layout_fragmentation"]),
     "A-02": (["basic_info", "education", "internship", "projects", "campus", "skills", "awards", "summary"], "medium", 4, ["layout_fragmentation"]),

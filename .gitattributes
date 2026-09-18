@@ -1,0 +1,11 @@
+# Keep source and documentation diffs reviewable across Windows, Linux, and macOS.
+* text=auto eol=lf
+
+# Binary artifacts must never receive line-ending conversion or textual diffs.
+*.docx binary
+*.pdf binary
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.ttf binary
+*.safetensors binary

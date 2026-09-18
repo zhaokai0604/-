@@ -5,8 +5,9 @@ from __future__ import annotations
 import json
 import queue
 import threading
+from collections.abc import Iterator
 from pathlib import Path
-from typing import Any, Iterator
+from typing import Any
 
 from app.core.database import SessionLocal
 from app.models.entities import AnalysisRecord, JobProfile
@@ -100,6 +101,7 @@ def iter_live_analysis_and_persist(record_id: int) -> Iterator[str]:
             return
         _live_running.add(record_id)
 
+    pipeline_worker_started = False
     try:
         with SessionLocal() as db:
             record = db.query(AnalysisRecord).filter(AnalysisRecord.id == record_id).first()
@@ -172,9 +174,12 @@ def iter_live_analysis_and_persist(record_id: int) -> Iterator[str]:
                 holder["error"] = str(exc)
             finally:
                 event_q.put(None)
+                with _live_lock:
+                    _live_running.discard(record_id)
 
         thread = threading.Thread(target=worker, daemon=True)
         thread.start()
+        pipeline_worker_started = True
 
         while True:
             item = event_q.get()
@@ -215,5 +220,6 @@ def iter_live_analysis_and_persist(record_id: int) -> Iterator[str]:
                 },
             )
     finally:
-        with _live_lock:
-            _live_running.discard(record_id)
+        if not pipeline_worker_started:
+            with _live_lock:
+                _live_running.discard(record_id)

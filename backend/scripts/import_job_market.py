@@ -14,8 +14,7 @@ import time
 from datetime import datetime, timezone
 from html.parser import HTMLParser
 from pathlib import Path
-from urllib import parse, robotparser, request
-
+from urllib import parse, request, robotparser
 
 DEGREE_PATTERNS = (
     ("doctorate", re.compile(r"博士|博士研究生|ph\.?d", re.I)),

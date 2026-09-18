@@ -1,0 +1,55 @@
+# 生产环境 Docker Compose 覆盖配置
+# 用法: docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d
+
+services:
+  mysql:
+    ports: []
+
+  redis:
+    ports: []
+
+  backend:
+    environment:
+      APP_ENV: production
+      APP_VERSION: ${APP_VERSION:-0.3.0}
+      ALLOW_REGISTER: ${ALLOW_REGISTER:-false}
+      SESSION_COOKIE_SECURE: ${SESSION_COOKIE_SECURE:-true}
+      PUBLIC_BASE_URL: ${PUBLIC_BASE_URL:-https://resume.example.edu.cn}
+      USE_CELERY: ${USE_CELERY:-true}
+    healthcheck:
+      test: ["CMD-SHELL", "python -c \"import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/api/health', timeout=3)\""]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 40s
+
+  celery-worker:
+    environment:
+      APP_ENV: production
+      USE_CELERY: "true"
+
+  celery-beat:
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+    container_name: resume-ai-celery-beat
+    restart: unless-stopped
+    command: ["celery", "-A", "app.tasks.celery_app:celery_app", "beat", "--loglevel=info"]
+    environment:
+      DATABASE_URL: mysql+pymysql://${MYSQL_USER:-resume}:${MYSQL_PASSWORD:-changeme}@mysql:3306/resume_ai?charset=utf8mb4
+      REDIS_URL: ${REDIS_URL:-redis://redis:6379/0}
+      USE_CELERY: "true"
+      APP_ENV: production
+      SESSION_SECRET: ${SESSION_SECRET:-}
+    volumes:
+      - ./data:/app/data
+      - ./assets:/app/assets
+    depends_on:
+      mysql:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+  frontend:
+    ports:
+      - "80:80"

@@ -7,7 +7,6 @@ import json
 from datetime import datetime, timezone
 from pathlib import Path
 
-
 ROOT = Path(__file__).resolve().parents[2]
 DEFAULT_INPUT = ROOT / "docs" / "testing" / "annotation_disagreements_A_B_common15.json"
 DEFAULT_OUTPUT = ROOT / "docs" / "testing" / "A池裁决工作表.json"

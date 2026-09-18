@@ -1,11 +1,10 @@
-from typing import Generator
+from collections.abc import Generator
 
 from sqlalchemy import create_engine, inspect, text
 from sqlalchemy.orm import DeclarativeBase, Session, sessionmaker
 from sqlalchemy.pool import StaticPool
 
 from app.core.config import settings
-
 
 LEGACY_DEFAULT_USER_NAME = "default_user"
 GUEST_DISPLAY_NAME = "游客"
@@ -55,7 +54,10 @@ def init_db() -> None:
     Base.metadata.create_all(bind=engine)
     _ensure_runtime_schema()
     with SessionLocal() as db:
-        ensure_guest_user(db, User)
+        from app.services.organization import ensure_default_organization
+
+        default_org = ensure_default_organization(db)
+        ensure_guest_user(db, User, organization_id=default_org.id)
         admin_username = normalize_username(cfg.admin_username)
         if cfg.admin_password and admin_username != cfg.default_user_name:
             existing_admin = db.query(User).filter(User.username == admin_username).first()
@@ -84,9 +86,13 @@ def init_db() -> None:
                     display_name=cfg.admin_display_name or admin_username,
                     role="admin",
                     status="active",
+                    organization_id=default_org.id,
                 )
                 db.add(admin)
                 db.commit()
+        from app.services.record_maintenance import run_startup_maintenance
+
+        run_startup_maintenance(db)
 
 
 def _ensure_runtime_schema() -> None:
@@ -108,6 +114,25 @@ def _ensure_runtime_schema() -> None:
 
     table_names = set(inspector.get_table_names())
     statements: list[str] = []
+    if "organizations" not in table_names:
+        statements.extend(_create_organizations_statements(is_sqlite))
+
+    org_tables = {
+        "users": "idx_users_organization",
+        "analysis_records": "idx_record_organization",
+        "batch_tasks": "idx_batch_organization",
+        "uploaded_files": "idx_upload_organization",
+        "reports": "idx_report_organization",
+        "job_profiles": "idx_job_profile_organization",
+    }
+    for table, index_name in org_tables.items():
+        if table not in table_names:
+            continue
+        columns = {column["name"] for column in inspector.get_columns(table)}
+        if "organization_id" not in columns:
+            statements.append(_add_int_column_statement(table, "organization_id", nullable=False, default="1", is_sqlite=is_sqlite))
+            statements.append(_add_index_statement(table, index_name, "organization_id", is_sqlite))
+
     if "job_profiles" not in table_names:
         statements.extend(_create_job_profiles_statements(is_sqlite))
 
@@ -202,6 +227,34 @@ def _add_bool_column_statement(table: str, column: str, *, default: str, is_sqli
     return f"ALTER TABLE {table} ADD COLUMN {column} {column_type} NOT NULL DEFAULT {default}"
 
 
+def _create_organizations_statements(is_sqlite: bool) -> list[str]:
+    if is_sqlite:
+        return [
+            """
+            CREATE TABLE organizations (
+              id INTEGER PRIMARY KEY AUTOINCREMENT,
+              name VARCHAR(120) NOT NULL DEFAULT '',
+              code VARCHAR(64) NOT NULL UNIQUE,
+              status VARCHAR(20) NOT NULL DEFAULT 'active',
+              created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+            )
+            """,
+            "CREATE INDEX IF NOT EXISTS idx_organization_code ON organizations (code)",
+        ]
+    return [
+        """
+        CREATE TABLE organizations (
+          id INT AUTO_INCREMENT PRIMARY KEY,
+          name VARCHAR(120) NOT NULL DEFAULT '',
+          code VARCHAR(64) NOT NULL UNIQUE,
+          status VARCHAR(20) NOT NULL DEFAULT 'active',
+          created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+          INDEX idx_organization_code (code)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
+        """
+    ]
+
+
 def _create_job_profiles_statements(is_sqlite: bool) -> list[str]:
     if is_sqlite:
         return [
@@ -286,10 +339,11 @@ def _create_user_profiles_statements(is_sqlite: bool) -> list[str]:
     ]
 
 
-def ensure_guest_user(db: Session, user_model=None):
+def ensure_guest_user(db: Session, user_model=None, organization_id: int | None = None):
     from app.models.entities import User
 
     model = user_model or User
+    org_id = organization_id or settings.default_organization_id
     guest_user = db.query(model).filter(model.username == settings.default_user_name).first()
     legacy_user = db.query(model).filter(model.username == LEGACY_DEFAULT_USER_NAME).first()
 
@@ -304,6 +358,9 @@ def ensure_guest_user(db: Session, user_model=None):
         if getattr(guest_user, "status", "active") != "active":
             guest_user.status = "active"
             changed = True
+        if getattr(guest_user, "organization_id", None) != org_id:
+            guest_user.organization_id = org_id
+            changed = True
         if changed:
             db.commit()
         return guest_user
@@ -313,11 +370,19 @@ def ensure_guest_user(db: Session, user_model=None):
         legacy_user.display_name = GUEST_DISPLAY_NAME
         legacy_user.role = "user"
         legacy_user.status = "active"
+        legacy_user.organization_id = org_id
         db.commit()
         db.refresh(legacy_user)
         return legacy_user
 
-    guest_user = model(username=settings.default_user_name, password_hash="", display_name=GUEST_DISPLAY_NAME, role="user", status="active")
+    guest_user = model(
+        username=settings.default_user_name,
+        password_hash="",
+        display_name=GUEST_DISPLAY_NAME,
+        role="user",
+        status="active",
+        organization_id=org_id,
+    )
     db.add(guest_user)
     db.commit()
     db.refresh(guest_user)

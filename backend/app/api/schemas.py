@@ -87,3 +87,17 @@ class UserProfileRequest(BaseModel):
 class TeacherTrainingTaskRequest(BaseModel):
     issue: str
     class_name: str = ""
+
+
+class ClassRosterRow(BaseModel):
+    username: str
+    display_name: str = ""
+    class_name: str = ""
+    major: str = ""
+    grade: str = ""
+    school: str = ""
+
+
+class ClassRosterImportRequest(BaseModel):
+    rows: list[ClassRosterRow] = Field(default_factory=list)
+    create_missing: bool = True

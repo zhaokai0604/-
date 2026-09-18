@@ -323,9 +323,6 @@ def main() -> int:
         if c.get("id") in CASE_IDS
     }
 
-    disagree_payload = load_json(DISAGREEMENTS)
-    disagree_map = {d["id"]: d["fields"] for d in disagree_payload.get("disagreements", [])}
-
     worksheet = load_json(WORKSHEET)
     adjudicated_at = datetime.now(timezone.utc).isoformat()
 

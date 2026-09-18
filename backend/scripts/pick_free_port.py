@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import argparse
 import socket
-import sys
 
 
 def can_bind(port: int) -> bool:

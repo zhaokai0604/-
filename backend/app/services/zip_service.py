@@ -9,7 +9,6 @@ from fastapi import HTTPException
 from app.core.config import settings
 from app.services.storage import ALLOWED_SINGLE_EXTENSIONS
 
-
 UTF8_FILENAME_FLAG = 0x800
 WINDOWS_ZIP_ENCODINGS = ("gb18030", "gbk")
 

@@ -8,12 +8,12 @@ from app.models.entities import AnalysisRecord, User, UserProfile
 from app.utils.json_tools import loads
 
 
-def list_teacher_student_records(db: Session) -> list[dict[str, Any]]:
+def list_teacher_student_records(db: Session, organization_id: int) -> list[dict[str, Any]]:
     rows = (
         db.query(AnalysisRecord, User, UserProfile)
         .join(User, User.id == AnalysisRecord.user_id)
         .outerjoin(UserProfile, UserProfile.user_id == User.id)
-        .filter(User.role == "user")
+        .filter(User.role == "user", User.organization_id == organization_id, AnalysisRecord.organization_id == organization_id)
         .order_by(AnalysisRecord.created_at.desc())
         .limit(500)
         .all()

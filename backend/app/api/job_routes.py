@@ -66,6 +66,7 @@ def copy_job_profile_preset(preset_id: str, request: Request, db: Session = Depe
 
     profile = JobProfile(
         user_id=actor.user.id,
+        organization_id=actor.organization_id,
         guest_session_id=actor_guest_session_value(actor),
         **payload,
     )
@@ -81,6 +82,7 @@ def create_job_profile(payload: JobProfileRequest, request: Request, db: Session
     normalized = normalize_job_profile_payload(payload)
     profile = JobProfile(
         user_id=actor.user.id,
+        organization_id=actor.organization_id,
         guest_session_id=actor_guest_session_value(actor),
         **normalized,
     )

@@ -1,4 +1,5 @@
 from app.services.parser import (
+    _junk_text_ratio,
     detect_sections,
     detect_target_from_filename,
     detect_target_position,
@@ -7,7 +8,6 @@ from app.services.parser import (
     extract_keywords,
     extract_name_hint,
     extract_skill_phrases,
-    _junk_text_ratio,
 )
 
 

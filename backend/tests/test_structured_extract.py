@@ -52,8 +52,9 @@ def test_parse_date_range_months_handles_present():
 
 
 def test_experience_months_merge_overlapping_ranges():
-    from app.services.structured_extract import _merged_interval_months
     from datetime import date
+
+    from app.services.structured_extract import _merged_interval_months
 
     # 2023.01-2023.12 与 2023.06-2024.03 重叠，合并后约 15 个月而非 22
     months = _merged_interval_months(

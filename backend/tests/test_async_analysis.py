@@ -4,6 +4,7 @@ import base64
 
 from fastapi.testclient import TestClient
 
+
 def _register(client: TestClient, username: str = "async_user") -> None:
     response = client.post(
         "/api/auth/register",
@@ -159,7 +160,7 @@ def test_ai_enhancement_updates_success_record(client: TestClient, monkeypatch):
         result["rewrite_preview"] = {"mode": "deepseek", "summary": "AI 改写", "items": [{"section": "经历", "original": "负责日常数据分析工作", "suggested": "使用 Python 和 SQL 输出 __ 份报告。", "focus": "AI"}]}
         return result, "deepseek"
 
-    monkeypatch.setattr("app.api.platform.enhance_with_deepseek", fake_enhance)
+    monkeypatch.setattr("app.services.platform_service.enhance_with_deepseek", fake_enhance)
     process_ai_enhancement(record_id)
 
     with SessionLocal() as db:
@@ -218,7 +219,7 @@ def test_ai_enhancement_failure_returns_core_label(client: TestClient, monkeypat
         result["ai_fallback_reason"] = "DeepSeek unavailable"
         return result, "offline_fallback"
 
-    monkeypatch.setattr("app.api.platform.enhance_with_deepseek", fake_enhance)
+    monkeypatch.setattr("app.services.platform_service.enhance_with_deepseek", fake_enhance)
     process_ai_enhancement(record_id)
 
     with SessionLocal() as db:

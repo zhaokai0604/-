@@ -19,9 +19,28 @@ def class_label(profile: UserProfile) -> str:
     return " · ".join(parts) if parts else "未分班"
 
 
-def build_teacher_class_panel(db: Session) -> dict[str, Any]:
+def _profiles_for_organization(db: Session, organization_id: int) -> list[UserProfile]:
+    return (
+        db.query(UserProfile)
+        .join(User, User.id == UserProfile.user_id)
+        .filter(User.organization_id == organization_id, User.role == "user")
+        .all()
+    )
+
+
+def _record_rows_for_organization(db: Session, organization_id: int) -> list[tuple[AnalysisRecord, UserProfile]]:
     success_filter = AnalysisRecord.status == "success"
-    profiles = db.query(UserProfile).all()
+    return (
+        db.query(AnalysisRecord, UserProfile)
+        .join(User, User.id == AnalysisRecord.user_id)
+        .join(UserProfile, UserProfile.user_id == User.id)
+        .filter(success_filter, AnalysisRecord.organization_id == organization_id, User.role == "user")
+        .all()
+    )
+
+
+def build_teacher_class_panel(db: Session, organization_id: int) -> dict[str, Any]:
+    profiles = _profiles_for_organization(db, organization_id)
     label_map: dict[str, dict[str, Any]] = {}
 
     for profile in profiles:
@@ -44,13 +63,7 @@ def build_teacher_class_panel(db: Session) -> dict[str, Any]:
         if profile.grade:
             bucket["grades"].add(profile.grade.strip())
 
-    record_rows = (
-        db.query(AnalysisRecord, UserProfile)
-        .join(User, User.id == AnalysisRecord.user_id)
-        .join(UserProfile, UserProfile.user_id == User.id)
-        .filter(success_filter)
-        .all()
-    )
+    record_rows = _record_rows_for_organization(db, organization_id)
     for record, profile in record_rows:
         label = class_label(profile)
         bucket = label_map.setdefault(
@@ -113,10 +126,11 @@ def build_teacher_class_panel(db: Session) -> dict[str, Any]:
     }
 
 
-def teacher_class_distribution(db: Session) -> list[dict[str, Any]]:
+def teacher_class_distribution(db: Session, organization_id: int) -> list[dict[str, Any]]:
     rows = (
         db.query(UserProfile.class_name, func.count(UserProfile.id))
-        .filter(UserProfile.class_name != "")
+        .join(User, User.id == UserProfile.user_id)
+        .filter(User.organization_id == organization_id, User.role == "user", UserProfile.class_name != "")
         .group_by(UserProfile.class_name)
         .order_by(func.count(UserProfile.id).desc())
         .limit(10)

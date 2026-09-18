@@ -11,7 +11,6 @@ from app.models.entities import AnalysisRecord, User, UserProfile
 from app.services.teacher_class_stats import class_label
 from app.utils.json_tools import loads
 
-
 _TEMPLATE_BANK: list[dict[str, str]] = [
     {
         "pattern": r"量化|指标|数据|百分比|提升",

@@ -26,4 +26,5 @@ def project_root() -> Path:
 
 
 def is_production_like() -> bool:
-    return os.getenv("APP_ENV", "").lower() in {"production", "prod"}
+    env = os.getenv("APP_ENV", "").strip().lower()
+    return env in {"production", "prod"}

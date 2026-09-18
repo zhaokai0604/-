@@ -81,7 +81,7 @@ def main() -> int:
         for case in cases
         if case.get("resume") and case.get("job")
     ]
-    print(f"=== train_sbert ===")
+    print("=== train_sbert ===")
     print(f"base: {args.base_model}")
     print(f"pairs: {len(examples)} -> {out_dir}")
 

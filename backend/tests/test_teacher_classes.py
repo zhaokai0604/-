@@ -14,8 +14,10 @@ def test_class_label_fallback_to_major_grade():
 
 def test_build_teacher_class_panel_empty(client):
     from app.core.database import SessionLocal
+    from app.services.organization import ensure_default_organization
 
     with SessionLocal() as db:
-        panel = build_teacher_class_panel(db)
+        org = ensure_default_organization(db)
+        panel = build_teacher_class_panel(db, org.id)
     assert "classes" in panel
     assert "summary" in panel

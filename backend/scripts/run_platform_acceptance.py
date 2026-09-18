@@ -14,12 +14,13 @@ sys.path.insert(0, str(ROOT))
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 from _resume_corpus_common import extract_text, iter_resume_files  # noqa: E402
-from app.services.analysis_pipeline import run_analysis_pipeline  # noqa: E402
 from run_quality_benchmark import (  # noqa: E402
     run_functional_tests,
     run_guardrail_eval,
     run_performance,
 )
+
+from app.services.analysis_pipeline import run_analysis_pipeline  # noqa: E402
 
 
 def main() -> int:
@@ -87,7 +88,7 @@ def run_document_corpus(files: list[Path], *, enable_ocr: bool) -> dict:
         started = time.perf_counter()
         try:
             result = (run_analysis_pipeline(path, "", "", False).get("result") or {})
-            if isinstance(result.get("total_score"), (int, float)) and result.get("scores"):
+            if isinstance(result.get("total_score"), int | float) and result.get("scores"):
                 analysis_ok += 1
             quality = str(result.get("parse_quality") or "unknown")
             quality_counts[quality] = quality_counts.get(quality, 0) + 1

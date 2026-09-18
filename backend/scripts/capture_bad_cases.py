@@ -221,7 +221,7 @@ def write_table_md(path: Path, rows: list[dict[str, Any]]) -> None:
     ]
     for r in rows:
         total = r.get("total_score")
-        total_s = f"{total:.1f}" if isinstance(total, (int, float)) else "-"
+        total_s = f"{total:.1f}" if isinstance(total, int | float) else "-"
         warn = str(r.get("core_warning") or "").replace("|", "/")
         behavior = str(r.get("system_behavior") or "").replace("|", "/")
         lines.append(

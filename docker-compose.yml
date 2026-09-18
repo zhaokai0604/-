@@ -41,6 +41,8 @@ services:
     container_name: resume-ai-backend
     restart: unless-stopped
     environment:
+      APP_ENV: ${APP_ENV:-development}
+      APP_VERSION: ${APP_VERSION:-0.3.0}
       DATABASE_URL: mysql+pymysql://${MYSQL_USER:-resume}:${MYSQL_PASSWORD:-changeme}@mysql:3306/resume_ai?charset=utf8mb4
       SESSION_SECRET: ${SESSION_SECRET:-}
       SESSION_COOKIE_NAME: ${SESSION_COOKIE_NAME:-resume_ai_session}
@@ -69,6 +71,12 @@ services:
         condition: service_healthy
       redis:
         condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "python -c \"import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/api/health', timeout=3)\""]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 40s
 
   celery-worker:
     build:

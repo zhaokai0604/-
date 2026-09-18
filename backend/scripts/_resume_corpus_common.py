@@ -11,8 +11,9 @@ from __future__ import annotations
 import json
 import re
 import shutil
+from collections.abc import Iterable
 from pathlib import Path
-from typing import Any, Iterable
+from typing import Any
 
 SUPPORTED_SUFFIXES = {".docx", ".pdf", ".txt", ".md"}
 SKIP_NAME_PREFIXES = ("~$", ".")
