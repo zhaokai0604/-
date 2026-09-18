@@ -2,7 +2,7 @@
 
 [中文](README.md) | [English](README_EN.md)
 
-[![CI](https://github.com/zhaokai0604/-/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/zhaokai0604/-/actions/workflows/ci.yml) [![CodeQL](https://github.com/zhaokai0604/-/actions/workflows/codeql.yml/badge.svg?branch=main)](https://github.com/zhaokai0604/-/actions/workflows/codeql.yml) [![License: Apache-2.0](https://img.shields.io/badge/License-Apache--2.0-blue.svg)](LICENSE)
+[![CI](https://github.com/zhaokai0604/jianxi-resume-intelligence/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/zhaokai0604/jianxi-resume-intelligence/actions/workflows/ci.yml) [![CodeQL](https://github.com/zhaokai0604/jianxi-resume-intelligence/actions/workflows/codeql.yml/badge.svg?branch=main)](https://github.com/zhaokai0604/jianxi-resume-intelligence/actions/workflows/codeql.yml) [![License: Apache-2.0](https://img.shields.io/badge/License-Apache--2.0-blue.svg)](LICENSE)
 
 > A 2026 national-finals qualifying project in the University Student Data Elements Literacy Competition, maintained as an open-source software project.
 
@@ -36,7 +36,7 @@ FastAPI service ── SQLite (local) or MySQL (deployment)
 Prerequisites: Python 3.10–3.12 and Node.js 18+.
 
 ```powershell
-git clone https://github.com/zhaokai0604/-.git jianxi-resume-intelligence
+git clone https://github.com/zhaokai0604/jianxi-resume-intelligence.git
 cd jianxi-resume-intelligence
 copy .env.example .env
 # Set a unique SESSION_SECRET and ADMIN_PASSWORD in .env before exposing the service.
