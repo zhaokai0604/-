@@ -1,3 +1,3 @@
 -r requirements.txt
-paddlepaddle==2.6.2
-paddleocr==2.9.1
+paddlepaddle==3.3.1
+paddleocr==3.7.0
